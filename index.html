@@ -21,6 +21,14 @@
 <link rel="preconnect" href="https://api.open-meteo.com">
 <link rel="preconnect" href="https://en.wikipedia.org">
 <link rel="preconnect" href="https://de1.api.radio-browser.info">
+<!-- YouTube + Maps preconnects: shave ~300-500ms off first iframe paint by warming
+     the TLS handshake before viewer.src is assigned. Critical for mobile networks. -->
+<link rel="preconnect" href="https://www.youtube.com">
+<link rel="preconnect" href="https://www.youtube-nocookie.com">
+<link rel="preconnect" href="https://i.ytimg.com">
+<link rel="preconnect" href="https://i9.ytimg.com">
+<link rel="preconnect" href="https://www.google.com">
+<link rel="dns-prefetch" href="https://yt3.ggpht.com">
 <link href="https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
 <style>
   * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -29,12 +37,43 @@
     background: #0a0a0a; color: #fff;
     font-family: 'Inter', system-ui, sans-serif;
     -webkit-font-smoothing: antialiased;
+    /* Lock the page to the visual viewport so iOS chrome retraction can't reveal black. */
+    height: 100dvh; min-height: 100dvh;
+  }
+  /* Wrapper clips the oversize iframe so the 16:9 video covers the viewport with
+     no letterboxing. The iframe itself is sized to whichever axis demands MORE pixels
+     to keep aspect ratio (object-fit: cover, but for iframes). */
+  .viewer-wrap {
+    position: fixed; inset: 0;
+    overflow: hidden;
+    background: #0a0a0a; z-index: 1;
   }
   #viewer {
-    position: fixed; inset: 0;
-    width: 100vw; height: 100vh;
+    position: absolute; top: 50%; left: 50%;
+    /* Default sizing: 16:9 by viewport width. min-* clauses kick in when the viewport
+       is taller than 16:9 (portrait phones, ultrawide-tall laptops) so we always cover. */
+    width: 100vw; height: 56.25vw;
+    min-height: 100vh; min-width: 177.78vh;
+    transform: translate(-50%, -50%);
     border: 0; background: #0a0a0a; z-index: 1;
+    /* Soft fade-in on src swap kills the harsh black flash between locations. */
+    opacity: 0; transition: opacity 0.45s ease;
+    /* Hint the browser to GPU-composite — smoother on iOS Safari during scaling. */
+    will-change: opacity;
   }
+  #viewer.is-loaded { opacity: 1; }
+  /* Subtle skeleton during the 800-1500ms YouTube cold-start so the user sees motion
+     instead of pure black. Disappears as soon as the iframe fades in. */
+  .viewer-wrap::before {
+    content: ''; position: absolute; inset: 0;
+    background:
+      radial-gradient(circle at 30% 40%, rgba(245,158,11,0.08), transparent 60%),
+      radial-gradient(circle at 70% 60%, rgba(0,168,150,0.06), transparent 55%),
+      #0a0a0a;
+    opacity: 1; transition: opacity 0.45s ease;
+    z-index: 0;
+  }
+  .viewer-wrap.is-loaded::before { opacity: 0; }
   .fade-scrim {
     position: fixed; inset: 0;
     pointer-events: none; z-index: 5;
@@ -211,7 +250,9 @@
     border: 1px solid rgba(255,255,255,0.12);
     border-radius: 10px; color: #fff;
     font-family: 'JetBrains Mono', 'Courier New', monospace;
-    font-size: 13px; margin-bottom: 14px;
+    /* 16px is the iOS auto-zoom threshold. Anything smaller and Safari zooms
+       in on focus, breaking the layout. Keep at 16px on all viewports. */
+    font-size: 16px; margin-bottom: 14px;
     transition: border-color 0.2s;
   }
   .setup-card input:focus {
@@ -307,16 +348,29 @@
     .toast { bottom: 84px; font-size: 11px; padding: 9px 16px; }
   }
   @media (max-width: 640px) {
-    .location-label { bottom: 118px; left: 22px; max-width: calc(100vw - 44px); }
-    .brand { top: 22px; left: 22px; font-size: 18px; }
-    .top-right-stack { top: 22px; right: 22px; gap: 10px; }
+    .location-label { bottom: 110px; left: 18px; max-width: calc(100vw - 36px); }
+    .brand { top: 18px; left: 18px; font-size: 17px; }
+    .top-right-stack { top: 18px; right: 18px; gap: 9px; }
     .telem { font-size: 10px; }
-    .controls { bottom: 26px; right: 22px; left: 22px; justify-content: space-between; }
+    /* All 7 controls in one row, evenly distributed, with 8px touch padding around. */
+    .controls {
+      bottom: 18px; right: 12px; left: 12px;
+      justify-content: space-evenly; gap: 6px;
+    }
     .hint { display: none; }
-    .btn { width: 42px; height: 42px; font-size: 14px; }
+    /* 40px hits Apple's 44px touch target with the visual border, while still
+       fitting 7 buttons + gaps inside a 320px viewport. */
+    .btn { width: 40px; height: 40px; font-size: 13px; }
     .setup-card { padding: 32px 24px; }
     .setup-card h1 { font-size: 36px; }
     .ambient-mode-indicator { display: none !important; }
+  }
+  /* Very narrow viewports (older iPhone SE, folded foldables): drop to 36px and
+     hide the postcard button to free space. Postcards still work via the P key. */
+  @media (max-width: 360px) {
+    .btn { width: 36px; height: 36px; font-size: 12px; }
+    #postcardBtn { display: none; }
+    .controls { gap: 4px; }
   }
 </style>
 </head>
@@ -340,7 +394,9 @@
   </div>
 </div>
 
-<iframe id="viewer" allow="autoplay; fullscreen; accelerometer; gyroscope; picture-in-picture; encrypted-media" loading="lazy" referrerpolicy="strict-origin-when-cross-origin" style="display:none"></iframe>
+<div class="viewer-wrap" id="viewerWrap" style="display:none">
+  <iframe id="viewer" allow="autoplay; fullscreen; picture-in-picture; encrypted-media" referrerpolicy="strict-origin-when-cross-origin"></iframe>
+</div>
 <div class="fade-scrim" id="scrim" style="display:none"></div>
 <audio id="radio" preload="none" crossorigin="anonymous"></audio>
 <audio id="ambientAudio" loop preload="none"></audio>
@@ -492,7 +548,12 @@ let apiKey = sessionStorage.getItem(STORAGE_KEY) || EMBEDDED_KEY || '';
 
 const $ = id => document.getElementById(id);
 const setupPanel = $('setupPanel'), apiKeyInput = $('apiKeyInput'), launchBtn = $('launchBtn');
-const viewer = $('viewer'), scrim = $('scrim'), brand = $('brand'), topRight = $('topRight');
+const viewer = $('viewer'), viewerWrap = $('viewerWrap'), scrim = $('scrim'), brand = $('brand'), topRight = $('topRight');
+// Fade the iframe in once YouTube/Maps have rendered. Hides the cold-start black flash.
+viewer.addEventListener('load', () => {
+  viewer.classList.add('is-loaded');
+  viewerWrap.classList.add('is-loaded');
+});
 const counter = $('counter'), locationLabel = $('locationLabel');
 const locationName = $('locationName'), locationCountry = $('locationCountry'), ambientFact = $('ambientFact');
 const hint = $('hint'), controls = $('controls');
@@ -664,6 +725,11 @@ function renderLocation(i, opts) {
   const reqId = ++locationRequestId;
   const loc = LOCATIONS[i];
 
+  // Reset fade state so the iframe ramps in fresh after each src swap.
+  // The skeleton gradient sits behind it during the YouTube cold-start.
+  viewer.classList.remove('is-loaded');
+  viewerWrap.classList.remove('is-loaded');
+
   // Audio handoff: stop anything currently playing so the previous location's
   // sound doesn't bleed into the new one. Radio will auto-resume inside fetchRadio
   // when audioMode === 2. Place sounds are restarted below once the iframe swaps.
@@ -739,7 +805,7 @@ function indexFromPath() {
 
 function launch() {
   setupPanel.style.display = 'none';
-  viewer.style.display = 'block';
+  viewerWrap.style.display = 'block';
   scrim.style.display = 'block';
   brand.style.display = 'block';
   topRight.style.display = 'flex';
@@ -1098,12 +1164,27 @@ document.addEventListener('keydown', e => {
   else if (e.key.toLowerCase() === 's') copyShareLink();
 });
 
-let touchStart = 0;
-document.addEventListener('touchstart', e => { touchStart = e.touches[0].clientX; }, { passive: true });
+// Touch swipes: horizontal-only. Track both axes so a vertical scroll attempt
+// (e.g. a user trying to pull-to-refresh or scroll something) doesn't trigger
+// next()/prev() if their finger drifts a bit sideways. Also ignore swipes that
+// start inside the postcard modal so its own scrolling stays intact.
+let touchStartX = 0, touchStartY = 0, touchStartTime = 0;
+document.addEventListener('touchstart', e => {
+  touchStartX = e.touches[0].clientX;
+  touchStartY = e.touches[0].clientY;
+  touchStartTime = Date.now();
+}, { passive: true });
 document.addEventListener('touchend', e => {
   if (setupPanel.style.display !== 'none') return;
-  const diff = e.changedTouches[0].clientX - touchStart;
-  if (Math.abs(diff) > 60) { diff < 0 ? next() : prev(); }
+  if (postcardModal.style.display === 'flex') return;
+  const dx = e.changedTouches[0].clientX - touchStartX;
+  const dy = e.changedTouches[0].clientY - touchStartY;
+  const dt = Date.now() - touchStartTime;
+  // Require: 60px horizontal, dx dominates dy by 1.7x, and gesture under 700ms.
+  // Filters out vertical scrolls and slow finger drags.
+  if (Math.abs(dx) > 60 && Math.abs(dx) > Math.abs(dy) * 1.7 && dt < 700) {
+    dx < 0 ? next() : prev();
+  }
 });
 
 if (apiKey) launch();

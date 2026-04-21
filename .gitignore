@@ -12,6 +12,9 @@ state.txt
 writetest.txt
 vercel-done.flag
 vercel-output.log
+backup.log
+backup_status.txt
+gh_probe.txt
 
 # Python bytecode cache
 __pycache__/

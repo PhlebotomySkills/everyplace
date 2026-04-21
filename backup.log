@@ -1,2 +1,37 @@
 [begin] Tue 04/21/2026  2:06:39.21
 Initialized empty Git repository in C:/Users/judge/OneDrive/Desktop/Lens/Lens/everyplace/.git/
+warning: in the working copy of '.gitignore', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of '1 CLICK HERE TO START EVERYPLACE.bat', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of '2 CLICK HERE TO STOP EVERYPLACE.bat', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of '3 CLICK HERE TO BACKUP TO GITHUB.bat', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'AUDIT-PROMPT.md', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'BACKUP-AUTO.bat', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'CHECK-STATE.bat', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'CLOUDFLARE-CACHE-RULE.md', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'DEPLOY-NOW.bat', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'DO-LOGIN.bat', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'EVERYPLACE-UPGRADES.md', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'GITHUB-BACKUP-INSTRUCTIONS.md', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'HARDEN-WINDOWS.md', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'OPEN-CLOUDFLARE-AUTH.bat', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'README.md', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'RUN-TUNNEL.bat', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'SECURITY-AUDIT.md', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'SERVE-8090.bat', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'SERVE.bat', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'TUNNEL-START-AUTO.bat', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'TUNNEL-START.bat', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'backup.log', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'deploy.bat', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'gh_probe.txt', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'index.html', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'serve.py', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'sounds/README.md', LF will be replaced by CRLF the next time Git touches it
+You are not logged into any GitHub hosts. To log in, run: gh auth login
+GraphQL: Name already exists on this account (createRepository)
+[repo create returned error, trying to add remote and push directly]
+error: No such remote: 'origin'
+To https://github.com/PhlebotomySkills/everyplace.git
+ * [new branch]      main -> main
+branch 'main' set up to track 'origin/main'.
+[DONE] https://github.com/PhlebotomySkills/everyplace
