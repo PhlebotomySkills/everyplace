@@ -1,0 +1,1113 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Everyplace · Ambient Earth</title>
+<meta name="description" content="A live window onto the planet. 4K cams from New York to Kenya to the ISS, fused with local radio, live weather, and planes overhead.">
+<meta property="og:title" content="Everyplace · Ambient Earth">
+<meta property="og:description" content="A live window onto the planet. 4K cams from New York to Kenya to the ISS, fused with local radio, live weather, and planes overhead.">
+<meta property="og:type" content="website">
+
+<!-- Security posture (audited 2026-04-20). Meta-level hardening; HTTP header equivalents should also be set at the edge (Cloudflare Transform Rules). -->
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data: https:; media-src https: data:; frame-src 'self' data: https://www.google.com https://www.youtube.com https://www.youtube-nocookie.com; connect-src https://api.open-meteo.com https://opensky-network.org https://en.wikipedia.org https://de1.api.radio-browser.info; base-uri 'self'; form-action 'none'; frame-ancestors 'none'; upgrade-insecure-requests">
+<meta http-equiv="X-Content-Type-Options" content="nosniff">
+<meta name="referrer" content="strict-origin-when-cross-origin">
+<meta name="robots" content="index, follow">
+<meta name="color-scheme" content="dark">
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="preconnect" href="https://api.open-meteo.com">
+<link rel="preconnect" href="https://en.wikipedia.org">
+<link rel="preconnect" href="https://de1.api.radio-browser.info">
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html, body {
+    width: 100%; height: 100%; overflow: hidden;
+    background: #0a0a0a; color: #fff;
+    font-family: 'Inter', system-ui, sans-serif;
+    -webkit-font-smoothing: antialiased;
+  }
+  #viewer {
+    position: fixed; inset: 0;
+    width: 100vw; height: 100vh;
+    border: 0; background: #0a0a0a; z-index: 1;
+  }
+  .fade-scrim {
+    position: fixed; inset: 0;
+    pointer-events: none; z-index: 5;
+    background: linear-gradient(to bottom, rgba(0,0,0,0.5) 0%, rgba(0,0,0,0) 20%, rgba(0,0,0,0) 58%, rgba(0,0,0,0.65) 100%);
+  }
+  .brand {
+    position: fixed; top: 28px; left: 32px; z-index: 10;
+    font-family: 'Syne', sans-serif; font-weight: 800;
+    font-size: 22px; letter-spacing: -0.02em;
+    text-shadow: 0 2px 16px rgba(0,0,0,0.9);
+  }
+  .brand .dot { color: #F59E0B; }
+  .top-right-stack {
+    position: fixed; top: 28px; right: 32px; z-index: 10;
+    display: flex; flex-direction: column; align-items: flex-end;
+    gap: 14px; text-shadow: 0 2px 16px rgba(0,0,0,0.9);
+  }
+  .counter {
+    font-family: 'Syne', sans-serif; font-weight: 800;
+    font-size: 16px; letter-spacing: 0.06em;
+    display: flex; align-items: center; gap: 6px;
+  }
+  .counter .current { color: #F59E0B; }
+  .counter .divider { opacity: 0.4; }
+  .counter .total { opacity: 0.6; }
+  .counter .live-badge {
+    margin-left: 10px; font-size: 9px; font-weight: 800;
+    letter-spacing: 0.18em; color: #0a0a0a;
+    background: #ff3b3b; padding: 3px 7px 2px;
+    border-radius: 3px; position: relative;
+    animation: livepulse 2.2s ease-in-out infinite;
+  }
+  @keyframes livepulse {
+    0%, 100% { box-shadow: 0 0 0 0 rgba(255,59,59,0.6); }
+    50% { box-shadow: 0 0 0 6px rgba(255,59,59,0); }
+  }
+  .telem {
+    display: flex; flex-direction: column; align-items: flex-end;
+    gap: 4px; font-size: 11px; font-weight: 500;
+    letter-spacing: 0.14em; text-transform: uppercase;
+    opacity: 0.78;
+  }
+  .telem .row { display: flex; align-items: center; gap: 8px; }
+  .telem .dot-sep { width: 3px; height: 3px; background: #F59E0B; border-radius: 50%; opacity: 0.6; }
+  .telem .weather-icon { font-size: 14px; }
+  .telem .hidden-row { display: none; }
+  .location-label {
+    position: fixed; bottom: 40px; left: 36px;
+    z-index: 10; max-width: 62vw; pointer-events: none;
+  }
+  .location-name {
+    font-family: 'Syne', sans-serif; font-weight: 800;
+    font-size: clamp(30px, 4.8vw, 52px);
+    line-height: 0.98; letter-spacing: -0.025em;
+    text-shadow: 0 2px 24px rgba(0,0,0,0.95);
+    margin-bottom: 8px;
+  }
+  .location-country {
+    font-size: 11px; font-weight: 600;
+    letter-spacing: 0.2em; text-transform: uppercase;
+    opacity: 0.78; margin-bottom: 14px;
+    text-shadow: 0 1px 12px rgba(0,0,0,0.95);
+  }
+  .ambient-fact {
+    font-size: 13px; font-weight: 400; line-height: 1.5;
+    opacity: 0; max-width: 520px;
+    color: rgba(255,255,255,0.82);
+    text-shadow: 0 1px 14px rgba(0,0,0,0.95);
+    font-style: italic;
+    transition: opacity 0.8s ease;
+  }
+  .ambient-fact.visible { opacity: 1; }
+  .ambient-fact .marker {
+    color: #F59E0B; font-style: normal; font-weight: 600;
+    letter-spacing: 0.14em; text-transform: uppercase; font-size: 10px;
+    margin-right: 8px;
+  }
+  .hint {
+    position: fixed; bottom: 40px; left: 50%;
+    transform: translateX(-50%); z-index: 10;
+    font-size: 10px; letter-spacing: 0.18em;
+    text-transform: uppercase; opacity: 0.35;
+    text-shadow: 0 1px 8px rgba(0,0,0,0.9);
+    pointer-events: none; white-space: nowrap;
+  }
+  .controls {
+    position: fixed; bottom: 32px; right: 32px; z-index: 10;
+    display: flex; gap: 10px; align-items: center;
+  }
+  .btn {
+    width: 46px; height: 46px; border-radius: 50%;
+    background: rgba(10, 10, 10, 0.6);
+    backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px);
+    border: 1px solid rgba(255,255,255,0.14);
+    color: #fff; display: flex; align-items: center; justify-content: center;
+    cursor: pointer; transition: all 0.2s ease;
+    font-size: 16px; font-family: inherit;
+  }
+  .btn:hover {
+    background: rgba(245, 158, 11, 0.18);
+    border-color: #F59E0B;
+    transform: scale(1.06);
+  }
+  .btn:active { transform: scale(0.94); }
+  .btn.active {
+    background: rgba(245, 158, 11, 0.22);
+    border-color: #F59E0B;
+    color: #F59E0B;
+  }
+  .btn .dot-live {
+    position: absolute; top: 8px; right: 8px;
+    width: 6px; height: 6px; border-radius: 50%;
+    background: #F59E0B;
+    animation: pulse 1.8s ease-in-out infinite;
+  }
+  @keyframes pulse {
+    0%, 100% { opacity: 1; transform: scale(1); }
+    50% { opacity: 0.4; transform: scale(1.3); }
+  }
+  .ambient-mode-indicator {
+    position: fixed; top: 50%; left: 32px;
+    transform: translateY(-50%);
+    z-index: 10; display: none;
+    pointer-events: none;
+  }
+  .ambient-mode-indicator.visible { display: block; }
+  .progress-ring {
+    width: 4px; height: 180px; background: rgba(255,255,255,0.08);
+    border-radius: 2px; overflow: hidden; position: relative;
+  }
+  .progress-ring .fill {
+    position: absolute; top: 0; left: 0; right: 0;
+    background: linear-gradient(to bottom, #F59E0B, rgba(245,158,11,0.4));
+    border-radius: 2px;
+    height: 0%;
+    transition: height 0.2s linear;
+  }
+  .setup-panel {
+    position: fixed; inset: 0; z-index: 100;
+    background: radial-gradient(circle at 70% 30%, #1a1a1a 0%, #0a0a0a 70%);
+    display: flex; align-items: center; justify-content: center;
+    padding: 24px;
+  }
+  .setup-card {
+    max-width: 540px; width: 100%;
+    background: rgba(255,255,255,0.02);
+    border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 20px; padding: 44px;
+    backdrop-filter: blur(20px);
+  }
+  .setup-card h1 {
+    font-family: 'Syne', sans-serif; font-weight: 800;
+    font-size: 44px; margin-bottom: 8px;
+    letter-spacing: -0.03em; line-height: 1;
+  }
+  .setup-card h1 .dot { color: #F59E0B; }
+  .setup-card .tagline {
+    opacity: 0.72; line-height: 1.55; margin-bottom: 28px;
+    font-size: 15px;
+  }
+  .setup-card h3 {
+    font-size: 10px; letter-spacing: 0.22em; text-transform: uppercase;
+    opacity: 0.5; margin-bottom: 14px; font-weight: 600;
+  }
+  .setup-card ol {
+    padding-left: 18px; margin-bottom: 28px;
+    line-height: 1.75; font-size: 14px; opacity: 0.88;
+  }
+  .setup-card a { color: #F59E0B; text-decoration: none; border-bottom: 1px solid rgba(245,158,11,0.3); }
+  .setup-card a:hover { border-bottom-color: #F59E0B; }
+  .setup-card input {
+    width: 100%; padding: 15px 16px;
+    background: rgba(255,255,255,0.04);
+    border: 1px solid rgba(255,255,255,0.12);
+    border-radius: 10px; color: #fff;
+    font-family: 'JetBrains Mono', 'Courier New', monospace;
+    font-size: 13px; margin-bottom: 14px;
+    transition: border-color 0.2s;
+  }
+  .setup-card input:focus {
+    outline: none; border-color: #F59E0B;
+    background: rgba(245,158,11,0.03);
+  }
+  .setup-card button {
+    width: 100%; padding: 15px;
+    background: #F59E0B; color: #0a0a0a;
+    border: none; border-radius: 10px;
+    font-family: 'Syne', sans-serif; font-weight: 800;
+    font-size: 15px; letter-spacing: 0.02em;
+    cursor: pointer; transition: background 0.2s;
+  }
+  .setup-card button:hover { background: #FCD34D; }
+  .setup-features {
+    margin-top: 24px; padding-top: 24px;
+    border-top: 1px solid rgba(255,255,255,0.06);
+    font-size: 12px; opacity: 0.6; line-height: 1.7;
+  }
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(14px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+  .anim { animation: fadeUp 0.7s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
+
+  /* Audio mode button: distinct visual states for silent / place / radio */
+  .btn.audio-place {
+    background: rgba(80, 200, 180, 0.22);
+    border-color: #50C8B4;
+    color: #50C8B4;
+  }
+  .btn.audio-radio {
+    background: rgba(245, 158, 11, 0.22);
+    border-color: #F59E0B;
+    color: #F59E0B;
+  }
+
+  /* Postcard modal */
+  .postcard-modal {
+    position: fixed; inset: 0; z-index: 200;
+    background: rgba(0,0,0,0.88);
+    backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);
+    display: flex; align-items: center; justify-content: center;
+    padding: 24px; animation: pcFadeIn 0.25s ease forwards;
+  }
+  @keyframes pcFadeIn { from { opacity: 0; } to { opacity: 1; } }
+  .postcard-inner {
+    max-width: 880px; width: 100%; text-align: center;
+  }
+  #postcardPreview {
+    max-width: 100%; max-height: 68vh;
+    border-radius: 12px; box-shadow: 0 20px 60px rgba(0,0,0,0.7);
+    border: 1px solid rgba(255,255,255,0.1);
+  }
+  .postcard-caption {
+    margin-top: 18px; font-size: 13px; letter-spacing: 0.08em;
+    text-transform: uppercase; opacity: 0.6;
+  }
+  .postcard-actions {
+    margin-top: 22px; display: flex; gap: 10px; justify-content: center; flex-wrap: wrap;
+  }
+  .pc-btn {
+    padding: 12px 22px; border-radius: 8px;
+    background: rgba(255,255,255,0.06);
+    border: 1px solid rgba(255,255,255,0.12);
+    color: #fff; font-family: 'Syne', sans-serif; font-weight: 700;
+    font-size: 13px; letter-spacing: 0.04em; cursor: pointer;
+    transition: all 0.15s ease;
+  }
+  .pc-btn:hover { background: rgba(255,255,255,0.1); }
+  .pc-btn.pc-primary {
+    background: #F59E0B; color: #0a0a0a; border-color: #F59E0B;
+  }
+  .pc-btn.pc-primary:hover { background: #FCD34D; }
+
+  /* Toast notifications (used by copy link, postcard download, etc.) */
+  .toast {
+    position: fixed; bottom: 96px; left: 50%;
+    transform: translateX(-50%) translateY(20px);
+    background: rgba(245, 158, 11, 0.95); color: #0a0a0a;
+    padding: 11px 22px; border-radius: 999px;
+    font-family: 'Syne', sans-serif; font-weight: 800;
+    font-size: 12px; letter-spacing: 0.1em; text-transform: uppercase;
+    opacity: 0; pointer-events: none; z-index: 150;
+    transition: opacity 0.25s ease, transform 0.25s ease;
+    box-shadow: 0 12px 40px rgba(0,0,0,0.5);
+  }
+  .toast.visible { opacity: 1; transform: translateX(-50%) translateY(0); }
+  @media (max-width: 640px) {
+    .pc-btn { flex: 1 1 auto; min-width: 120px; }
+    #postcardPreview { max-height: 52vh; }
+    .toast { bottom: 84px; font-size: 11px; padding: 9px 16px; }
+  }
+  @media (max-width: 640px) {
+    .location-label { bottom: 118px; left: 22px; max-width: calc(100vw - 44px); }
+    .brand { top: 22px; left: 22px; font-size: 18px; }
+    .top-right-stack { top: 22px; right: 22px; gap: 10px; }
+    .telem { font-size: 10px; }
+    .controls { bottom: 26px; right: 22px; left: 22px; justify-content: space-between; }
+    .hint { display: none; }
+    .btn { width: 42px; height: 42px; font-size: 14px; }
+    .setup-card { padding: 32px 24px; }
+    .setup-card h1 { font-size: 36px; }
+    .ambient-mode-indicator { display: none !important; }
+  }
+</style>
+</head>
+<body>
+
+<div class="setup-panel" id="setupPanel">
+  <div class="setup-card">
+    <h1>Everyplace<span class="dot">.</span></h1>
+    <p class="tagline">An ambient window onto real Earth. Street View, local radio, weather, planes overhead, and live context for every place, fused into one cinematic canvas.</p>
+    <h3>One-time setup</h3>
+    <ol>
+      <li>Open the <a href="https://console.cloud.google.com/google/maps-apis/credentials" target="_blank" rel="noopener">Google Cloud Console</a> and create an API key.</li>
+      <li>Enable the <strong>Maps Embed API</strong>. Free forever, no usage limits.</li>
+      <li>Paste the key below. Stored only in this browser tab.</li>
+    </ol>
+    <input type="text" id="apiKeyInput" placeholder="AIza..." autocomplete="off" spellcheck="false">
+    <button id="launchBtn">Launch Everyplace</button>
+    <div class="setup-features">
+      Radio plays the country's most-voted local station. Weather, local time, and flights overhead update live. Ambient mode auto-travels every 90 seconds. All data sources are free, no keys beyond Google Maps.
+    </div>
+  </div>
+</div>
+
+<iframe id="viewer" allow="autoplay; fullscreen; accelerometer; gyroscope; picture-in-picture; encrypted-media" loading="lazy" referrerpolicy="strict-origin-when-cross-origin" style="display:none"></iframe>
+<div class="fade-scrim" id="scrim" style="display:none"></div>
+<audio id="radio" preload="none" crossorigin="anonymous"></audio>
+<audio id="ambientAudio" loop preload="none"></audio>
+<canvas id="postcardCanvas" width="1200" height="630" style="display:none"></canvas>
+
+<div class="brand" id="brand" style="display:none">Everyplace<span class="dot">.</span></div>
+
+<div class="top-right-stack" id="topRight" style="display:none">
+  <div class="counter" id="counter">
+    <span class="current">01</span><span class="divider">/</span><span class="total">50</span>
+  </div>
+  <div class="telem" id="telem">
+    <div class="row" id="weatherRow"><span class="weather-icon" id="weatherIcon">·</span><span id="weatherText">·</span></div>
+    <div class="row" id="timeRow"><span id="timeText">·</span></div>
+    <div class="row hidden-row" id="planesRow"><span id="planesText">·</span></div>
+    <div class="row hidden-row" id="radioRow"><span id="radioText">·</span></div>
+  </div>
+</div>
+
+<div class="ambient-mode-indicator" id="ambientIndicator">
+  <div class="progress-ring"><div class="fill" id="progressFill"></div></div>
+</div>
+
+<div class="location-label" id="locationLabel" style="display:none">
+  <div class="location-name" id="locationName"></div>
+  <div class="location-country" id="locationCountry"></div>
+  <div class="ambient-fact" id="ambientFact"></div>
+</div>
+<div class="hint" id="hint" style="display:none">← → travel · space random · A ambient · M audio · P postcard · drag to look</div>
+<div class="controls" id="controls" style="display:none">
+  <button class="btn" id="prevBtn" aria-label="Previous">←</button>
+  <button class="btn" id="randomBtn" aria-label="Random">⚃</button>
+  <button class="btn" id="nextBtn" aria-label="Next">→</button>
+  <button class="btn" id="muteBtn" aria-label="Cycle audio: silent / place sounds / radio">♪</button>
+  <button class="btn" id="postcardBtn" aria-label="Save postcard">◨</button>
+  <button class="btn" id="shareBtn" aria-label="Copy share link">⎘</button>
+  <button class="btn" id="ambientBtn" aria-label="Ambient mode">◎</button>
+</div>
+
+<div class="postcard-modal" id="postcardModal" style="display:none">
+  <div class="postcard-inner">
+    <img id="postcardPreview" alt="">
+    <div class="postcard-caption" id="postcardCaption"></div>
+    <div class="postcard-actions">
+      <button class="pc-btn pc-primary" id="postcardDownload">Download</button>
+      <button class="pc-btn" id="postcardCopyLink">Copy link</button>
+      <button class="pc-btn" id="postcardClose">Close</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// LIVE cams use ytLive (direct video ID) or ytChannel (live_stream?channel redirect).
+// When neither is set, Street View is used (protected by SV_SESSION_CAP below).
+const LOCATIONS = [
+  // --- LIVE 4K / HD CAMS (verified embeddable via oembed + embed page check) ---
+  { name: 'Times Square', country: 'New York, USA', lat: 40.7580, lng: -73.9855, cc: 'US', ytLive: 'VGnFLdQW39A', live: true },
+  { name: 'Shibuya Crossing', country: 'Tokyo, Japan', lat: 35.6595, lng: 139.7004, cc: 'JP', ytLive: '_9pavMzUY-c', live: true },
+  { name: 'Jackson Hole Town Square', country: 'Wyoming, USA', lat: 43.4799, lng: -110.7624, cc: 'US', ytLive: '1EiC9bvVGnk', live: true },
+  { name: 'Mount Fuji, Kawaguchi', country: 'Yamanashi, Japan', lat: 35.5100, lng: 138.7700, cc: 'JP', ytLive: 'Sv9hcJ3k5h4', live: true },
+  { name: 'Lake Kawaguchiko', country: 'Mount Fuji, Japan', lat: 35.5167, lng: 138.7500, cc: 'JP', ytLive: 'bdUbACCWmoY', live: true },
+  { name: 'Aurora, Reykjavík', country: 'Iceland', lat: 64.1466, lng: -21.9426, cc: 'IS', ytLive: 'goLhhpt8r0Y', live: true },
+
+  // --- STREET VIEW LOCATIONS (capped at SV_SESSION_CAP per session) ---
+  { name: 'Rialto Bridge', country: 'Venice, Italy', lat: 45.4380, lng: 12.3358, heading: 270, cc: 'IT' },
+  { name: 'Mong Kok', country: 'Hong Kong', lat: 22.3193, lng: 114.1694, heading: 0, cc: 'HK' },
+  { name: 'Jemaa el-Fnaa', country: 'Marrakech, Morocco', lat: 31.6258, lng: -7.9891, heading: 90, cc: 'MA' },
+  { name: 'Petra', country: 'Jordan', lat: 30.3285, lng: 35.4444, heading: 180, cc: 'JO' },
+  { name: 'Chefchaouen', country: 'Morocco', lat: 35.1689, lng: -5.2636, heading: 0, cc: 'MA' },
+  { name: 'Hallstatt', country: 'Austria', lat: 47.5622, lng: 13.6493, heading: 180, cc: 'AT' },
+  { name: 'Oia', country: 'Santorini, Greece', lat: 36.4618, lng: 25.3753, heading: 270, cc: 'GR' },
+  { name: 'Vernazza', country: 'Cinque Terre, Italy', lat: 44.1350, lng: 9.6840, heading: 45, cc: 'IT' },
+  { name: 'Machu Picchu', country: 'Peru', lat: -13.1631, lng: -72.5450, heading: 90, cc: 'PE' },
+  { name: 'Uluru', country: 'Australia', lat: -25.3444, lng: 131.0369, heading: 0, cc: 'AU' },
+  { name: 'Cappadocia', country: 'Turkey', lat: 38.6431, lng: 34.8289, heading: 180, cc: 'TR' },
+  { name: 'Angkor Wat', country: 'Cambodia', lat: 13.4125, lng: 103.8670, heading: 90, cc: 'KH' },
+  { name: 'Great Wall, Mutianyu', country: 'China', lat: 40.4319, lng: 116.5704, heading: 45, cc: 'CN' },
+  { name: 'Salar de Uyuni', country: 'Bolivia', lat: -20.1338, lng: -67.4891, heading: 90, cc: 'BO' },
+  { name: 'Vestrahorn', country: 'Iceland', lat: 64.2540, lng: -14.9945, heading: 180, cc: 'IS' },
+  { name: 'Plitvice Lakes', country: 'Croatia', lat: 44.8654, lng: 15.5820, heading: 270, cc: 'HR' },
+  { name: 'Reine, Lofoten', country: 'Norway', lat: 67.9326, lng: 13.0901, heading: 90, cc: 'NO' },
+  { name: 'Arashiyama Bamboo Grove', country: 'Kyoto, Japan', lat: 35.0170, lng: 135.6710, heading: 0, cc: 'JP' },
+  { name: 'Varanasi Ghats', country: 'India', lat: 25.3079, lng: 83.0118, heading: 180, cc: 'IN' },
+  { name: 'Golden Gai', country: 'Tokyo, Japan', lat: 35.6938, lng: 139.7036, heading: 90, cc: 'JP' },
+  { name: 'Meteora', country: 'Greece', lat: 39.7217, lng: 21.6306, heading: 180, cc: 'GR' },
+  { name: 'San Pedro de Atacama', country: 'Chile', lat: -22.9098, lng: -68.1997, heading: 0, cc: 'CL' },
+  { name: 'Burj Khalifa', country: 'Dubai, UAE', lat: 25.1972, lng: 55.2744, heading: 90, cc: 'AE' },
+  { name: 'Moraine Lake', country: 'Banff, Canada', lat: 51.3217, lng: -116.1860, heading: 180, cc: 'CA' },
+  { name: 'Quiraing', country: 'Isle of Skye, Scotland', lat: 57.6436, lng: -6.2669, heading: 90, cc: 'GB' },
+  { name: 'Longyearbyen', country: 'Svalbard, Norway', lat: 78.2232, lng: 15.6267, heading: 0, cc: 'NO' },
+  { name: 'Gasadalur', country: 'Faroe Islands', lat: 62.1015, lng: -7.4397, heading: 270, cc: 'FO' },
+  { name: 'Old Havana', country: 'Cuba', lat: 23.1360, lng: -82.3583, heading: 90, cc: 'CU' },
+  { name: 'Copacabana Beach', country: 'Rio de Janeiro, Brazil', lat: -22.9711, lng: -43.1822, heading: 180, cc: 'BR' },
+  { name: 'Rano Raraku Moai', country: 'Easter Island', lat: -27.1240, lng: -109.2886, heading: 90, cc: 'CL' },
+  { name: 'Chureito Pagoda', country: 'Mount Fuji, Japan', lat: 35.5100, lng: 138.8017, heading: 225, cc: 'JP' },
+  { name: 'Glencoe', country: 'Scottish Highlands', lat: 56.6810, lng: -5.0068, heading: 270, cc: 'GB' },
+  { name: 'Sossusvlei Dunes', country: 'Namibia', lat: -24.7292, lng: 15.3527, heading: 0, cc: 'NA' },
+  { name: 'Salento Coffee Region', country: 'Colombia', lat: 4.6376, lng: -75.5707, heading: 45, cc: 'CO' },
+  { name: 'Cartagena Walled City', country: 'Colombia', lat: 10.4236, lng: -75.5518, heading: 90, cc: 'CO' },
+  { name: 'Bow Bridge, Central Park', country: 'New York, USA', lat: 40.7756, lng: -73.9713, heading: 180, cc: 'US' },
+  { name: 'Tower Bridge', country: 'London, UK', lat: 51.5055, lng: -0.0754, heading: 270, cc: 'GB' },
+  { name: 'Trocadéro', country: 'Paris, France', lat: 48.8606, lng: 2.2889, heading: 135, cc: 'FR' },
+  { name: 'Sydney Opera House', country: 'Australia', lat: -33.8568, lng: 151.2153, heading: 0, cc: 'AU' },
+  { name: 'Table Mountain', country: 'Cape Town, South Africa', lat: -33.9628, lng: 18.4098, heading: 90, cc: 'ZA' },
+  { name: 'Gardens by the Bay', country: 'Singapore', lat: 1.2816, lng: 103.8636, heading: 180, cc: 'SG' },
+  { name: 'Pyramids of Giza', country: 'Egypt', lat: 29.9792, lng: 31.1342, heading: 90, cc: 'EG' },
+  { name: 'Chiang Mai Old City', country: 'Thailand', lat: 18.7877, lng: 98.9931, heading: 0, cc: 'TH' },
+  { name: 'Trolltunga', country: 'Norway', lat: 60.1242, lng: 6.7400, heading: 180, cc: 'NO' },
+  { name: 'Dead Sea Shore', country: 'Israel', lat: 31.5590, lng: 35.4732, heading: 90, cc: 'IL' },
+  { name: 'Pripyat', country: 'Chernobyl, Ukraine', lat: 51.4055, lng: 30.0578, heading: 0, cc: 'UA' },
+  { name: 'Lake Baikal', country: 'Siberia, Russia', lat: 51.8500, lng: 104.8700, heading: 180, cc: 'RU' },
+  { name: 'Dubrovnik Old Town', country: 'Croatia', lat: 42.6407, lng: 18.1077, heading: 90, cc: 'HR' }
+];
+
+// Slug generation: "Times Square" -> "times-square", "Oia" -> "oia".
+// Used for everyplace.live/{slug} permalinks. Done at boot so we can match on it later.
+function slugify(s) {
+  return s.toLowerCase()
+    .normalize('NFD').replace(/[\u0300-\u036f]/g, '')   // strip diacritics
+    .replace(/[^a-z0-9\s-]/g, '')                        // drop punctuation
+    .trim().replace(/\s+/g, '-').replace(/-+/g, '-');    // collapse whitespace/dashes
+}
+LOCATIONS.forEach(l => { l.slug = slugify(l.name); });
+
+// Place-sound files for Street View and silent-cam locations. File naming is {slug}.mp3
+// in the /sounds/ folder on this origin. If the file is missing we quietly fall back
+// to "no audio" rather than erroring. Chris curates these from freesound.org over time.
+// Start small: ambient-audio files for high-traffic Street View locations first.
+
+// Billing protection. Caps Street View calls per browser session.
+// 20 loads x ~1 SV load each = ~$0.28 worst case per user. Viral traffic cannot exceed
+// (users x 20) calls no matter how long they stay.
+const SV_SESSION_CAP = 20;
+function svCount() { return parseInt(sessionStorage.getItem('ep_sv_count') || '0', 10); }
+function svInc() { sessionStorage.setItem('ep_sv_count', String(svCount() + 1)); }
+
+const STORAGE_KEY = 'everyplace_gmaps_key';
+// NOTE: This key is embedded client-side so the site works with zero setup.
+// It MUST be locked down in Google Cloud Console with two restrictions:
+//   1. Application restrictions → HTTP referrers → https://everyplace.live/*, https://www.everyplace.live/*
+//   2. API restrictions → Restrict key → only "Maps Embed API"
+// Without those restrictions, anyone who views source can burn your quota.
+const EMBEDDED_KEY = 'AIzaSyBJ002iBmKOU_y7CtHbbMZcOlgKKxEJSio';
+const AMBIENT_DURATION = 90000;
+// URL ?key= fallback removed 2026-04-20: leaks keys into referrer headers and browser history.
+let apiKey = sessionStorage.getItem(STORAGE_KEY) || EMBEDDED_KEY || '';
+
+const $ = id => document.getElementById(id);
+const setupPanel = $('setupPanel'), apiKeyInput = $('apiKeyInput'), launchBtn = $('launchBtn');
+const viewer = $('viewer'), scrim = $('scrim'), brand = $('brand'), topRight = $('topRight');
+const counter = $('counter'), locationLabel = $('locationLabel');
+const locationName = $('locationName'), locationCountry = $('locationCountry'), ambientFact = $('ambientFact');
+const hint = $('hint'), controls = $('controls');
+const prevBtn = $('prevBtn'), nextBtn = $('nextBtn'), randomBtn = $('randomBtn'), muteBtn = $('muteBtn'), ambientBtn = $('ambientBtn');
+const weatherRow = $('weatherRow'), weatherIcon = $('weatherIcon'), weatherText = $('weatherText');
+const timeRow = $('timeRow'), timeText = $('timeText');
+const planesRow = $('planesRow'), planesText = $('planesText');
+const radioRow = $('radioRow'), radioText = $('radioText');
+const radio = $('radio');
+const ambientAudio = $('ambientAudio');
+const ambientIndicator = $('ambientIndicator'), progressFill = $('progressFill');
+const postcardBtn = $('postcardBtn'), shareBtn = $('shareBtn');
+const postcardModal = $('postcardModal'), postcardPreview = $('postcardPreview');
+const postcardCaption = $('postcardCaption'), postcardDownload = $('postcardDownload');
+const postcardCopyLink = $('postcardCopyLink'), postcardClose = $('postcardClose');
+const postcardCanvas = $('postcardCanvas');
+const toast = $('toast');
+
+// Audio mode state machine:
+//   0 = silent (default, iframe stays muted, no place sounds, no radio)
+//   1 = place sounds (iframe stays muted, ambient MP3 if available, or unmute live cam)
+//   2 = radio (iframe muted, place sounds off, radio station from country plays)
+// Button click cycles 0 -> 1 -> 2 -> 0.
+let audioMode = 0;
+// Legacy compatibility: keep a radioPlaying flag so fetchRadio() knows whether to autoplay.
+// It is now derived from audioMode === 2.
+
+let currentIndex = 0;
+let ambientMode = false;
+let ambientTimer = null;
+let ambientStart = 0;
+let ambientRaf = null;
+let locationRequestId = 0;
+let timeInterval = null;
+let locationTimezone = 'UTC';
+
+const pad2 = n => String(n).padStart(2, '0');
+
+function weatherEmoji(code, isDay) {
+  if (code === 0) return isDay ? '☀' : '☾';
+  if (code <= 3) return '⛅';
+  if (code <= 48) return '🌫';
+  if (code <= 67) return '🌧';
+  if (code <= 77) return '❄';
+  if (code <= 82) return '🌧';
+  if (code <= 86) return '❄';
+  return '⛈';
+}
+function weatherLabel(code) {
+  if (code === 0) return 'Clear';
+  if (code <= 3) return 'Cloudy';
+  if (code <= 48) return 'Fog';
+  if (code <= 57) return 'Drizzle';
+  if (code <= 67) return 'Rain';
+  if (code <= 77) return 'Snow';
+  if (code <= 82) return 'Showers';
+  if (code <= 86) return 'Snow';
+  return 'Storm';
+}
+
+async function fetchWeather(lat, lng, reqId) {
+  try {
+    const r = await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lng}&current=temperature_2m,weather_code,is_day&timezone=auto`);
+    const d = await r.json();
+    if (reqId !== locationRequestId) return;
+    const c = d.current;
+    locationTimezone = d.timezone || 'UTC';
+    weatherIcon.textContent = weatherEmoji(c.weather_code, c.is_day);
+    weatherText.textContent = `${Math.round(c.temperature_2m)}° · ${weatherLabel(c.weather_code)}`;
+    weatherRow.style.display = 'flex';
+    startLocalClock();
+  } catch (e) { weatherRow.style.display = 'none'; }
+}
+
+function startLocalClock() {
+  if (timeInterval) clearInterval(timeInterval);
+  const render = () => {
+    try {
+      const now = new Date().toLocaleTimeString('en-US', { timeZone: locationTimezone, hour: '2-digit', minute: '2-digit', hour12: true });
+      timeText.textContent = now + ' LOCAL';
+      timeRow.style.display = 'flex';
+    } catch (e) { timeRow.style.display = 'none'; }
+  };
+  render();
+  timeInterval = setInterval(render, 30000);
+}
+
+async function fetchPlanes(lat, lng, reqId) {
+  try {
+    const pad = 0.6;
+    const url = `https://opensky-network.org/api/states/all?lamin=${lat - pad}&lomin=${lng - pad}&lamax=${lat + pad}&lomax=${lng + pad}`;
+    const r = await fetch(url);
+    if (!r.ok) throw new Error('opensky');
+    const d = await r.json();
+    if (reqId !== locationRequestId) return;
+    const n = d.states ? d.states.length : 0;
+    if (n > 0) {
+      planesText.textContent = `✈ ${n} overhead`;
+      planesRow.classList.remove('hidden-row');
+      planesRow.style.display = 'flex';
+    } else {
+      planesRow.style.display = 'none';
+      planesRow.classList.add('hidden-row');
+    }
+  } catch (e) {
+    planesRow.style.display = 'none';
+    planesRow.classList.add('hidden-row');
+  }
+}
+
+async function fetchAmbientFact(lat, lng, reqId) {
+  try {
+    const url = `https://en.wikipedia.org/w/api.php?action=query&list=geosearch&gscoord=${lat}%7C${lng}&gsradius=3000&gslimit=8&format=json&origin=*`;
+    const r = await fetch(url);
+    const d = await r.json();
+    if (reqId !== locationRequestId) return;
+    const items = (d.query && d.query.geosearch) || [];
+    if (!items.length) { ambientFact.classList.remove('visible'); return; }
+    const pick = items[Math.min(1, items.length - 1)];
+    const extractUrl = `https://en.wikipedia.org/api/rest_v1/page/summary/${encodeURIComponent(pick.title)}`;
+    const r2 = await fetch(extractUrl);
+    const d2 = await r2.json();
+    if (reqId !== locationRequestId) return;
+    const extract = d2.extract || '';
+    const sentence = extract.split(/(?<=[.!?])\s/)[0] || '';
+    if (sentence.length > 20) {
+      // XSS-safe: build via DOM nodes so Wikipedia text cannot inject markup.
+      ambientFact.textContent = '';
+      const marker = document.createElement('span');
+      marker.className = 'marker';
+      marker.textContent = 'Nearby';
+      ambientFact.appendChild(marker);
+      ambientFact.appendChild(document.createTextNode(' ' + sentence));
+      setTimeout(() => { if (reqId === locationRequestId) ambientFact.classList.add('visible'); }, 400);
+    }
+  } catch (e) { ambientFact.classList.remove('visible'); }
+}
+
+async function fetchRadio(cc, reqId) {
+  if (!cc) return;
+  try {
+    const r = await fetch(`https://de1.api.radio-browser.info/json/stations/search?countrycode=${cc}&limit=8&hidebroken=true&order=clickcount&reverse=true&is_https=true`);
+    const stations = await r.json();
+    if (reqId !== locationRequestId) return;
+    if (!stations.length) { radioRow.style.display = 'none'; return; }
+    const station = stations[Math.floor(Math.random() * Math.min(4, stations.length))];
+    radio.src = station.url_resolved;
+    radioText.textContent = `♪ ${station.name.trim().slice(0, 28)}`;
+    radioRow.classList.remove('hidden-row');
+    radioRow.style.display = 'flex';
+    if (audioMode === 2) {
+      radio.play().catch(() => {});
+    }
+  } catch (e) { radioRow.style.display = 'none'; }
+}
+
+// YouTube iframe API via postMessage. enablejsapi=1 on the src (set in renderLocation)
+// makes the player accept these commands. Call ytCmd('unMute') + ytCmd('setVolume',[50])
+// to get real place audio from the live camera stream.
+function ytCmd(func, args) {
+  try {
+    const msg = JSON.stringify({ event: 'command', func, args: args || [] });
+    if (viewer.contentWindow) viewer.contentWindow.postMessage(msg, '*');
+  } catch (e) {}
+}
+
+function renderLocation(i, opts) {
+  opts = opts || {};
+  const reqId = ++locationRequestId;
+  const loc = LOCATIONS[i];
+
+  // Audio handoff: stop anything currently playing so the previous location's
+  // sound doesn't bleed into the new one. Radio will auto-resume inside fetchRadio
+  // when audioMode === 2. Place sounds are restarted below once the iframe swaps.
+  try { ambientAudio.pause(); ambientAudio.currentTime = 0; } catch(e) {}
+  try { radio.pause(); } catch(e) {}
+
+  // Update the URL to /{slug} so the permalink is always shareable.
+  // opts.skipHistory = true when this call originates from a popstate event.
+  if (!opts.skipHistory) {
+    const newPath = '/' + loc.slug;
+    if (location.pathname !== newPath) {
+      try { history.pushState({ slug: loc.slug }, '', newPath); } catch(e) {}
+    }
+  }
+
+  // Pick source: live YouTube stream > live YouTube channel > Street View (capped)
+  // enablejsapi=1 is required so our postMessage unmute/mute can reach the player.
+  if (loc.ytLive) {
+    viewer.src = `https://www.youtube.com/embed/${loc.ytLive}?autoplay=1&mute=1&controls=0&playsinline=1&modestbranding=1&rel=0&iv_load_policy=3&enablejsapi=1&origin=${encodeURIComponent(location.origin)}`;
+  } else if (loc.ytChannel) {
+    viewer.src = `https://www.youtube.com/embed/live_stream?channel=${loc.ytChannel}&autoplay=1&mute=1&controls=0&playsinline=1&modestbranding=1&rel=0&iv_load_policy=3&enablejsapi=1&origin=${encodeURIComponent(location.origin)}`;
+  } else {
+    // Street View path — enforce cap to protect against runaway Google Maps billing.
+    if (svCount() >= SV_SESSION_CAP) {
+      // Cap reached: show a dark fallback with a message rather than burning another API call.
+      viewer.src = `data:text/html;charset=utf-8,<!DOCTYPE html><html><head><style>html,body{margin:0;height:100%;background:#0a0a0a;color:%23fff;font-family:system-ui,sans-serif;display:flex;align-items:center;justify-content:center;text-align:center;padding:24px}div{max-width:480px}h1{font-size:22px;font-weight:800;margin-bottom:12px;color:%23F59E0B}p{font-size:14px;opacity:.7;line-height:1.5}</style></head><body><div><h1>Session limit reached</h1><p>You've explored ${SV_SESSION_CAP} Street View locations this session. Jump to a live 4K camera above, or refresh to reset.</p></div></body></html>`;
+    } else {
+      viewer.src = `https://www.google.com/maps/embed/v1/streetview?key=${apiKey}&location=${loc.lat},${loc.lng}&heading=${loc.heading || 0}&pitch=0&fov=90`;
+      svInc();
+    }
+  }
+
+  locationName.textContent = loc.name;
+  locationCountry.textContent = loc.country;
+  ambientFact.classList.remove('visible');
+  ambientFact.innerHTML = '';
+  counter.querySelector('.current').textContent = pad2(i + 1);
+  counter.querySelector('.total').textContent = pad2(LOCATIONS.length);
+  locationLabel.classList.remove('anim');
+  void locationLabel.offsetWidth;
+  locationLabel.classList.add('anim');
+  weatherText.textContent = '…';
+  weatherIcon.textContent = '·';
+
+  // LIVE badge on the counter row
+  const liveBadge = counter.querySelector('.live-badge');
+  if (loc.live) {
+    if (!liveBadge) {
+      const b = document.createElement('span');
+      b.className = 'live-badge';
+      b.textContent = 'LIVE';
+      counter.appendChild(b);
+    }
+  } else if (liveBadge) {
+    liveBadge.remove();
+  }
+
+  fetchWeather(loc.lat, loc.lng, reqId);
+  fetchPlanes(loc.lat, loc.lng, reqId);
+  fetchAmbientFact(loc.lat, loc.lng, reqId);
+  fetchRadio(loc.cc, reqId);
+
+  // If user had place-sounds on, carry that mode across to the new location.
+  if (audioMode === 1) startPlaceSounds();
+}
+
+// Match the current URL slug to a LOCATIONS index. Returns -1 if not found.
+function indexFromPath() {
+  const slug = location.pathname.replace(/^\/+|\/+$/g, '').toLowerCase();
+  if (!slug) return -1;
+  return LOCATIONS.findIndex(l => l.slug === slug);
+}
+
+function launch() {
+  setupPanel.style.display = 'none';
+  viewer.style.display = 'block';
+  scrim.style.display = 'block';
+  brand.style.display = 'block';
+  topRight.style.display = 'flex';
+  locationLabel.style.display = 'block';
+  hint.style.display = 'block';
+  controls.style.display = 'flex';
+
+  // If arriving via a permalink (e.g. everyplace.live/tokyo), open that location.
+  // Otherwise open on a random LIVE camera so first impression = real-time + no Street View spend.
+  const pathIdx = indexFromPath();
+  if (pathIdx >= 0) {
+    currentIndex = pathIdx;
+  } else {
+    const liveIdxs = LOCATIONS.map((l, i) => l.live ? i : -1).filter(i => i >= 0);
+    currentIndex = liveIdxs.length ? liveIdxs[Math.floor(Math.random() * liveIdxs.length)] : 0;
+  }
+  renderLocation(currentIndex);
+}
+
+// Handle back/forward: re-sync currentIndex from URL without pushing a new state.
+window.addEventListener('popstate', () => {
+  if (setupPanel.style.display !== 'none') return;
+  const i = indexFromPath();
+  if (i >= 0 && i !== currentIndex) {
+    currentIndex = i;
+    renderLocation(currentIndex, { skipHistory: true });
+    if (ambientMode) restartAmbient();
+  }
+});
+
+function next() { currentIndex = (currentIndex + 1) % LOCATIONS.length; renderLocation(currentIndex); restartAmbient(); }
+function prev() { currentIndex = (currentIndex - 1 + LOCATIONS.length) % LOCATIONS.length; renderLocation(currentIndex); restartAmbient(); }
+function random() {
+  let i;
+  do { i = Math.floor(Math.random() * LOCATIONS.length); } while (i === currentIndex && LOCATIONS.length > 1);
+  currentIndex = i; renderLocation(currentIndex); restartAmbient();
+}
+
+// Stop everything audio-related (used when switching modes or locations).
+function stopAllAudio() {
+  try { radio.pause(); } catch(e) {}
+  try { ambientAudio.pause(); ambientAudio.currentTime = 0; } catch(e) {}
+  ytCmd('mute');
+}
+
+// Start "place sounds" for the current location:
+//   - If the camera is a YouTube live cam, unmute it (real place audio).
+//   - Otherwise try /sounds/{slug}.mp3 (curated ambient audio file).
+//   - If the file is missing, stay silent but keep the button in place-mode state.
+function startPlaceSounds() {
+  const loc = LOCATIONS[currentIndex];
+  if (loc.ytLive || loc.ytChannel) {
+    // Tiny delay so the iframe has had a moment to hook up the JS API.
+    setTimeout(() => { if (audioMode === 1) { ytCmd('unMute'); ytCmd('setVolume', [50]); } }, 400);
+    return;
+  }
+  // Street View: try a curated mp3.
+  const src = `/sounds/${loc.slug}.mp3`;
+  ambientAudio.src = src;
+  ambientAudio.volume = 0.55;
+  const p = ambientAudio.play();
+  if (p) {
+    p.catch(() => {
+      // File missing or autoplay blocked. Keep the button in place-mode so it's
+      // clear what's intended, but don't error-spam.
+    });
+  }
+}
+
+// Cycle: silent (0) -> place (1) -> radio (2) -> silent.
+function cycleAudioMode() {
+  audioMode = (audioMode + 1) % 3;
+  // Clear previous state.
+  stopAllAudio();
+  muteBtn.classList.remove('active', 'audio-place', 'audio-radio');
+  muteBtn.innerHTML = '♪';
+  muteBtn.style.position = 'relative';
+
+  if (audioMode === 1) {
+    muteBtn.classList.add('audio-place');
+    muteBtn.innerHTML = '◔<span class="dot-live"></span>';
+    startPlaceSounds();
+    showToast('Place sounds');
+  } else if (audioMode === 2) {
+    muteBtn.classList.add('audio-radio');
+    muteBtn.innerHTML = '♪<span class="dot-live"></span>';
+    radio.volume = 0.45;
+    const p = radio.play();
+    if (p) p.catch(() => {
+      // Station may not be loaded yet (fetchRadio still in flight). It will
+      // auto-start when the src arrives because fetchRadio checks audioMode.
+    });
+    showToast('Local radio');
+  } else {
+    showToast('Muted');
+  }
+}
+
+// Keep the legacy name as an alias so key bindings still work.
+const toggleMute = cycleAudioMode;
+
+function toggleAmbient() {
+  ambientMode = !ambientMode;
+  if (ambientMode) {
+    ambientBtn.classList.add('active');
+    ambientIndicator.classList.add('visible');
+    startAmbient();
+  } else {
+    ambientBtn.classList.remove('active');
+    ambientIndicator.classList.remove('visible');
+    stopAmbient();
+  }
+}
+
+function startAmbient() {
+  stopAmbient();
+  ambientStart = Date.now();
+  ambientTimer = setTimeout(() => { if (ambientMode) { next(); } }, AMBIENT_DURATION);
+  const tick = () => {
+    if (!ambientMode) return;
+    const elapsed = Date.now() - ambientStart;
+    const pct = Math.min(100, (elapsed / AMBIENT_DURATION) * 100);
+    progressFill.style.height = pct + '%';
+    ambientRaf = requestAnimationFrame(tick);
+  };
+  ambientRaf = requestAnimationFrame(tick);
+}
+
+function stopAmbient() {
+  if (ambientTimer) { clearTimeout(ambientTimer); ambientTimer = null; }
+  if (ambientRaf) { cancelAnimationFrame(ambientRaf); ambientRaf = null; }
+  progressFill.style.height = '0%';
+}
+
+function restartAmbient() { if (ambientMode) startAmbient(); }
+
+// -----------------------------------------------------------------------------
+// POSTCARD EXPORT — renders a 1200x630 PNG of the current view for sharing.
+// -----------------------------------------------------------------------------
+function currentShareUrl() {
+  return `${location.origin}/${LOCATIONS[currentIndex].slug}`;
+}
+
+function showToast(msg) {
+  toast.textContent = msg;
+  toast.classList.add('visible');
+  clearTimeout(showToast._t);
+  showToast._t = setTimeout(() => toast.classList.remove('visible'), 1800);
+}
+
+// Draw the hero background into the canvas. For live cams, use the YouTube thumbnail
+// (i.ytimg.com has the Access-Control-Allow-Origin: * header so canvas stays un-tainted).
+// For Street View, paint a gradient backdrop so the postcard is typography-forward.
+function loadHero(loc) {
+  return new Promise(resolve => {
+    if (!loc.ytLive) return resolve(null);
+    const img = new Image();
+    img.crossOrigin = 'anonymous';
+    img.onload = () => resolve(img);
+    img.onerror = () => resolve(null);
+    // maxresdefault is 1280x720, exactly the aspect ratio we want for 1200x630 cropped.
+    img.src = `https://i.ytimg.com/vi/${loc.ytLive}/maxresdefault.jpg`;
+  });
+}
+
+async function buildPostcard() {
+  const loc = LOCATIONS[currentIndex];
+  const ctx = postcardCanvas.getContext('2d');
+  const W = postcardCanvas.width, H = postcardCanvas.height;
+
+  // Background
+  ctx.fillStyle = '#0a0a0a';
+  ctx.fillRect(0, 0, W, H);
+
+  const hero = await loadHero(loc);
+  if (hero) {
+    // Cover fit the 1280x720 thumbnail into 1200x630.
+    const hr = hero.width / hero.height;
+    const tr = W / H;
+    let sx, sy, sw, sh;
+    if (hr > tr) { sh = hero.height; sw = sh * tr; sx = (hero.width - sw) / 2; sy = 0; }
+    else { sw = hero.width; sh = sw / tr; sx = 0; sy = (hero.height - sh) / 2; }
+    ctx.drawImage(hero, sx, sy, sw, sh, 0, 0, W, H);
+  } else {
+    // Street View fallback: warm radial for typography-forward postcard.
+    const grad = ctx.createRadialGradient(W * 0.75, H * 0.25, 80, W * 0.5, H * 0.6, 900);
+    grad.addColorStop(0, '#2b1f0f');
+    grad.addColorStop(0.5, '#140c05');
+    grad.addColorStop(1, '#050302');
+    ctx.fillStyle = grad;
+    ctx.fillRect(0, 0, W, H);
+  }
+
+  // Bottom-to-top scrim for text legibility
+  const scrim = ctx.createLinearGradient(0, H * 0.35, 0, H);
+  scrim.addColorStop(0, 'rgba(0,0,0,0)');
+  scrim.addColorStop(1, 'rgba(0,0,0,0.92)');
+  ctx.fillStyle = scrim;
+  ctx.fillRect(0, 0, W, H);
+
+  // Top-left brand pill
+  ctx.fillStyle = '#F59E0B';
+  ctx.fillRect(60, 58, 8, 8);
+  ctx.fillStyle = '#fff';
+  ctx.font = '800 22px "Syne", system-ui, sans-serif';
+  ctx.textBaseline = 'top';
+  ctx.fillText('EVERYPLACE', 82, 54);
+  ctx.fillStyle = '#F59E0B';
+  ctx.fillText('.', 82 + ctx.measureText('EVERYPLACE').width, 54);
+
+  // Top-right URL (so anyone who sees the screenshot knows where it came from)
+  ctx.font = '500 18px Inter, system-ui, sans-serif';
+  ctx.fillStyle = 'rgba(255,255,255,0.7)';
+  const urlStr = `everyplace.live/${loc.slug}`;
+  const urlW = ctx.measureText(urlStr).width;
+  ctx.fillText(urlStr, W - urlW - 60, 60);
+
+  // Location name — main hero
+  ctx.fillStyle = '#fff';
+  ctx.font = '800 78px "Syne", system-ui, sans-serif';
+  ctx.textBaseline = 'bottom';
+  const nameLines = wrapText(ctx, loc.name, W - 120);
+  let ny = H - 150;
+  for (let k = nameLines.length - 1; k >= 0; k--) {
+    ctx.fillText(nameLines[k], 60, ny);
+    ny -= 88;
+  }
+
+  // Country label
+  ctx.font = '600 20px Inter, system-ui, sans-serif';
+  ctx.fillStyle = 'rgba(255,255,255,0.75)';
+  ctx.letterSpacing = '0.2em';
+  ctx.fillText((loc.country || '').toUpperCase(), 60, H - 108);
+
+  // Telemetry strip: time · weather · LIVE
+  const timeStr = timeText.textContent && timeText.textContent !== '·' ? timeText.textContent : '';
+  const wxStr = weatherText.textContent && weatherText.textContent !== '·' ? weatherText.textContent : '';
+  const parts = [];
+  if (timeStr) parts.push(timeStr);
+  if (wxStr) parts.push(wxStr);
+  if (loc.live) parts.push('LIVE');
+  if (parts.length) {
+    ctx.font = '500 16px Inter, system-ui, sans-serif';
+    ctx.fillStyle = 'rgba(255,255,255,0.65)';
+    const telem = parts.join('  ·  ');
+    ctx.fillText(telem, 60, H - 70);
+  }
+
+  // Orange accent bar on the left
+  ctx.fillStyle = '#F59E0B';
+  ctx.fillRect(60, H - 205, 40, 3);
+
+  return postcardCanvas.toDataURL('image/png');
+}
+
+// Canvas text wrapping helper. Keeps "Great Wall, Mutianyu" or "Cartagena Walled City" readable.
+function wrapText(ctx, text, maxWidth) {
+  const words = text.split(' ');
+  const lines = [];
+  let line = '';
+  for (const word of words) {
+    const test = line ? line + ' ' + word : word;
+    if (ctx.measureText(test).width > maxWidth && line) {
+      lines.push(line);
+      line = word;
+    } else {
+      line = test;
+    }
+  }
+  if (line) lines.push(line);
+  return lines.slice(0, 2); // max 2 lines to preserve visual balance
+}
+
+async function openPostcard() {
+  postcardBtn.classList.add('active');
+  showToast('Rendering postcard…');
+  try {
+    const dataUrl = await buildPostcard();
+    postcardPreview.src = dataUrl;
+    postcardCaption.textContent = `${LOCATIONS[currentIndex].name} · everyplace.live/${LOCATIONS[currentIndex].slug}`;
+    postcardModal.style.display = 'flex';
+  } catch (e) {
+    showToast('Could not render');
+  } finally {
+    postcardBtn.classList.remove('active');
+  }
+}
+
+function closePostcard() {
+  postcardModal.style.display = 'none';
+}
+
+function downloadPostcard() {
+  const link = document.createElement('a');
+  link.href = postcardPreview.src;
+  link.download = `everyplace-${LOCATIONS[currentIndex].slug}.png`;
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+  showToast('Postcard saved');
+}
+
+async function copyShareLink() {
+  const url = currentShareUrl();
+  try {
+    await navigator.clipboard.writeText(url);
+    showToast('Link copied');
+  } catch (e) {
+    // Fallback for older browsers / permission-denied clipboard.
+    const ta = document.createElement('textarea');
+    ta.value = url; ta.style.position = 'fixed'; ta.style.opacity = '0';
+    document.body.appendChild(ta); ta.select();
+    try { document.execCommand('copy'); showToast('Link copied'); }
+    catch (e2) { showToast('Copy failed'); }
+    document.body.removeChild(ta);
+  }
+}
+
+// -----------------------------------------------------------------------------
+// Event wiring
+// -----------------------------------------------------------------------------
+
+launchBtn.addEventListener('click', () => {
+  const k = apiKeyInput.value.trim();
+  if (!k) { apiKeyInput.focus(); return; }
+  apiKey = k;
+  sessionStorage.setItem(STORAGE_KEY, k);
+  launch();
+});
+apiKeyInput.addEventListener('keydown', e => { if (e.key === 'Enter') launchBtn.click(); });
+nextBtn.addEventListener('click', next);
+prevBtn.addEventListener('click', prev);
+randomBtn.addEventListener('click', random);
+muteBtn.addEventListener('click', cycleAudioMode);
+ambientBtn.addEventListener('click', toggleAmbient);
+postcardBtn.addEventListener('click', openPostcard);
+shareBtn.addEventListener('click', copyShareLink);
+postcardDownload.addEventListener('click', downloadPostcard);
+postcardCopyLink.addEventListener('click', copyShareLink);
+postcardClose.addEventListener('click', closePostcard);
+postcardModal.addEventListener('click', e => { if (e.target === postcardModal) closePostcard(); });
+
+document.addEventListener('keydown', e => {
+  if (setupPanel.style.display !== 'none') return;
+  // If the postcard modal is open, Esc closes it. All other keys are ignored.
+  if (postcardModal.style.display === 'flex') {
+    if (e.key === 'Escape') closePostcard();
+    return;
+  }
+  if (e.key === 'ArrowRight') next();
+  else if (e.key === 'ArrowLeft') prev();
+  else if (e.key === ' ') { e.preventDefault(); random(); }
+  else if (e.key.toLowerCase() === 'm') cycleAudioMode();
+  else if (e.key.toLowerCase() === 'a') toggleAmbient();
+  else if (e.key.toLowerCase() === 'p') openPostcard();
+  else if (e.key.toLowerCase() === 's') copyShareLink();
+});
+
+let touchStart = 0;
+document.addEventListener('touchstart', e => { touchStart = e.touches[0].clientX; }, { passive: true });
+document.addEventListener('touchend', e => {
+  if (setupPanel.style.display !== 'none') return;
+  const diff = e.changedTouches[0].clientX - touchStart;
+  if (Math.abs(diff) > 60) { diff < 0 ? next() : prev(); }
+});
+
+if (apiKey) launch();
+else apiKeyInput.focus();
+</script>
+</body>
+</html>

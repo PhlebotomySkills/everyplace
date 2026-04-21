@@ -1,0 +1,44 @@
+# Big binaries — cloudflared is 65MB and gets re-downloaded anyway
+cloudflared.exe
+
+# Sensitive: tunnel config (contains tunnel UUID + path to cert.pem)
+config.yml
+
+# Runtime logs and state files
+login.log
+tunnel.log
+tunnel_list.txt
+state.txt
+writetest.txt
+vercel-done.flag
+vercel-output.log
+
+# Python bytecode cache
+__pycache__/
+*.pyc
+*.pyo
+
+# OS noise
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Old backup copies (keep local only)
+index.html.pre-audit-backup
+
+# Editor cruft
+*.swp
+*.swo
+.vscode/
+.idea/
+
+# Sound files are big and curation is local-first
+# Uncomment the next two lines if you want to keep sounds out of git
+# sounds/*.mp3
+# sounds/*.ogg
+
+# Secrets file if you ever create one
+.env
+.env.local
+*.pem
+*.key

@@ -1,0 +1,3 @@
+C:\Program Files\GitHub CLI\gh.exe
+gh version 2.90.0 (2026-04-16)
+https://github.com/cli/cli/releases/tag/v2.90.0
