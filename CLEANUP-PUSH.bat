@@ -24,7 +24,7 @@ git rm --cached backup.log backup_status.txt gh_probe.txt >>"%LOG%" 2>&1
 
 echo  Step 2/4: Staging changes and committing...
 git add -A >>"%LOG%" 2>&1
-git commit -m "Widescreen viewer + mobile audit: cover-fit iframe (no black bars), iOS 16px input, 100dvh, 7 buttons fit narrow phones, swipe vertical filter, YT preconnects, fade-in skeleton. Plus housekeeping: gitignore scratch files + add launch-ready hardening scripts." >>"%LOG%" 2>&1
+git commit -m "Launch v2: 30 verified live cams (live ratio 11pct -> 43pct), oEmbed pre-flight probe + 8s PLAYING watchdog stack, My Places favorites (F save / V filter), TV mode (T or ?tv=1) with Wake Lock, 9-button toolbar with mobile fallback, LAUNCH-STRATEGY doc with B2B licensing roadmap." >>"%LOG%" 2>&1
 set COMMIT_RC=%errorlevel%
 >>"%LOG%" echo [commit exit code] %COMMIT_RC%
 

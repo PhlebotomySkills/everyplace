@@ -10,7 +10,7 @@
 <meta property="og:type" content="website">
 
 <!-- Security posture (audited 2026-04-20). Meta-level hardening; HTTP header equivalents should also be set at the edge (Cloudflare Transform Rules). -->
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data: https:; media-src https: data:; frame-src 'self' data: https://www.google.com https://www.youtube.com https://www.youtube-nocookie.com; connect-src https://api.open-meteo.com https://opensky-network.org https://en.wikipedia.org https://de1.api.radio-browser.info; base-uri 'self'; form-action 'none'; frame-ancestors 'none'; upgrade-insecure-requests">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data: https:; media-src https: data:; frame-src 'self' data: https://www.google.com https://www.youtube.com https://www.youtube-nocookie.com; connect-src https://api.open-meteo.com https://opensky-network.org https://en.wikipedia.org https://de1.api.radio-browser.info https://www.youtube.com; base-uri 'self'; form-action 'none'; frame-ancestors 'none'; upgrade-insecure-requests">
 <meta http-equiv="X-Content-Type-Options" content="nosniff">
 <meta name="referrer" content="strict-origin-when-cross-origin">
 <meta name="robots" content="index, follow">
@@ -291,6 +291,40 @@
     color: #F59E0B;
   }
 
+  /* Favorite button: when current place is saved, show solid heart in warm pink-amber.
+     When favorites filter is active, the button itself glows so users can see the mode. */
+  .btn.fav-on { color: #FF5F8A; border-color: #FF5F8A; background: rgba(255,95,138,0.15); }
+  .btn.fav-filter { box-shadow: 0 0 0 2px rgba(255,95,138,0.7); }
+
+  /* TV / ambient mode: full-bleed, no UI. The body class hides every chrome layer.
+     Cursor is also hidden after a short delay so the screen reads as a true window.
+     Re-press T or move mouse + ESC to exit. Mouse-move reveals chrome briefly. */
+  body.tv-mode .brand,
+  body.tv-mode .top-right-stack,
+  body.tv-mode .controls,
+  body.tv-mode .hint,
+  body.tv-mode .location-label,
+  body.tv-mode .ambient-mode-indicator,
+  body.tv-mode .fade-scrim { opacity: 0; pointer-events: none; transition: opacity 0.4s ease; }
+  body.tv-mode.tv-reveal .brand,
+  body.tv-mode.tv-reveal .top-right-stack,
+  body.tv-mode.tv-reveal .controls,
+  body.tv-mode.tv-reveal .location-label,
+  body.tv-mode.tv-reveal .fade-scrim { opacity: 1; pointer-events: auto; }
+  body.tv-mode { cursor: none; }
+  body.tv-mode.tv-reveal { cursor: default; }
+  .tv-exit-hint {
+    position: fixed; top: 50%; left: 50%;
+    transform: translate(-50%, -50%);
+    z-index: 50; opacity: 0; pointer-events: none;
+    font-family: 'Syne', sans-serif; font-weight: 800;
+    font-size: 11px; letter-spacing: 0.22em; text-transform: uppercase;
+    color: rgba(255,255,255,0.55);
+    text-shadow: 0 2px 16px rgba(0,0,0,0.95);
+    transition: opacity 0.35s ease;
+  }
+  .tv-exit-hint.show { opacity: 1; }
+
   /* Postcard modal */
   .postcard-modal {
     position: fixed; inset: 0; z-index: 200;
@@ -352,12 +386,14 @@
     .brand { top: 18px; left: 18px; font-size: 17px; }
     .top-right-stack { top: 18px; right: 18px; gap: 9px; }
     .telem { font-size: 10px; }
-    /* All 7 controls in one row, evenly distributed, with 8px touch padding around. */
+    /* Mobile: 7 essential controls in one row. Drop share + postcard since both have
+       keyboard alternatives (P, S) and the favorite/TV buttons are higher value. */
     .controls {
       bottom: 18px; right: 12px; left: 12px;
       justify-content: space-evenly; gap: 6px;
     }
     .hint { display: none; }
+    #postcardBtn, #shareBtn { display: none; }
     /* 40px hits Apple's 44px touch target with the visual border, while still
        fitting 7 buttons + gaps inside a 320px viewport. */
     .btn { width: 40px; height: 40px; font-size: 13px; }
@@ -365,11 +401,10 @@
     .setup-card h1 { font-size: 36px; }
     .ambient-mode-indicator { display: none !important; }
   }
-  /* Very narrow viewports (older iPhone SE, folded foldables): drop to 36px and
-     hide the postcard button to free space. Postcards still work via the P key. */
+  /* Very narrow viewports (older iPhone SE, folded foldables): drop to 36px to
+     keep all 7 essentials visible. */
   @media (max-width: 360px) {
     .btn { width: 36px; height: 36px; font-size: 12px; }
-    #postcardBtn { display: none; }
     .controls { gap: 4px; }
   }
 </style>
@@ -425,15 +460,17 @@
   <div class="location-country" id="locationCountry"></div>
   <div class="ambient-fact" id="ambientFact"></div>
 </div>
-<div class="hint" id="hint" style="display:none">← → travel · space random · A ambient · M audio · P postcard · drag to look</div>
+<div class="hint" id="hint" style="display:none">← → travel · space random · F save · V my places · A auto · M audio · T tv mode · P postcard</div>
 <div class="controls" id="controls" style="display:none">
   <button class="btn" id="prevBtn" aria-label="Previous">←</button>
   <button class="btn" id="randomBtn" aria-label="Random">⚃</button>
   <button class="btn" id="nextBtn" aria-label="Next">→</button>
   <button class="btn" id="muteBtn" aria-label="Cycle audio: silent / place sounds / radio">♪</button>
+  <button class="btn" id="favBtn" aria-label="Save place to favorites (F)">♡</button>
   <button class="btn" id="postcardBtn" aria-label="Save postcard">◨</button>
   <button class="btn" id="shareBtn" aria-label="Copy share link">⎘</button>
   <button class="btn" id="ambientBtn" aria-label="Ambient mode">◎</button>
+  <button class="btn" id="tvBtn" aria-label="TV mode (T): hide UI, prevent sleep">◯</button>
 </div>
 
 <div class="postcard-modal" id="postcardModal" style="display:none">
@@ -449,6 +486,7 @@
 </div>
 
 <div class="toast" id="toast"></div>
+<div class="tv-exit-hint" id="tvExitHint">Press T or Esc to exit</div>
 
 <script>
 // LIVE cams use ytLive (direct video ID) or ytChannel (live_stream?channel redirect).
@@ -461,6 +499,38 @@ const LOCATIONS = [
   { name: 'Mount Fuji, Kawaguchi', country: 'Yamanashi, Japan', lat: 35.5100, lng: 138.7700, cc: 'JP', state: 'Yamanashi', ytLive: 'Sv9hcJ3k5h4', live: true },
   { name: 'Lake Kawaguchiko', country: 'Mount Fuji, Japan', lat: 35.5167, lng: 138.7500, cc: 'JP', state: 'Yamanashi', ytLive: 'bdUbACCWmoY', live: true },
   { name: 'Aurora, Reykjavík', country: 'Iceland', lat: 64.1466, lng: -21.9426, cc: 'IS', ytLive: 'goLhhpt8r0Y', live: true },
+
+  // --- LIVE CAMS ADDED 2026-04-21 (verified via YouTube oEmbed) ---
+  { name: 'Abbey Road Crossing', country: 'London, UK', lat: 51.5320, lng: -0.1779, cc: 'GB', state: 'England', ytLive: '57w2gYXjRic', live: true },
+  { name: 'Big Ben', country: 'London, UK', lat: 51.5007, lng: -0.1246, cc: 'GB', state: 'England', ytLive: 'VgRo9SBQW3U', live: true },
+  { name: 'Niagara Falls', country: 'Niagara, Canada', lat: 43.0828, lng: -79.0742, cc: 'CA', state: 'Ontario', ytLive: 'W3D3dEpR3bs', live: true },
+  { name: 'Bourbon Street', country: 'New Orleans, USA', lat: 29.9584, lng: -90.0644, cc: 'US', state: 'Louisiana', ytLive: 'ryyC8t-mxyQ', live: true },
+  { name: 'Broadway', country: 'Nashville, USA', lat: 36.1610, lng: -86.7750, cc: 'US', state: 'Tennessee', ytLive: 'MrSqv7yJWIE', live: true },
+  { name: 'Temple Bar', country: 'Dublin, Ireland', lat: 53.3456, lng: -6.2636, cc: 'IE', state: 'Leinster', ytLive: 'fXnFs9Op4HY', live: true },
+  { name: 'Fremont Street', country: 'Las Vegas, USA', lat: 36.1706, lng: -115.1443, cc: 'US', state: 'Nevada', ytLive: '2-WiWMLgfBs', live: true },
+  { name: 'Gangnam', country: 'Seoul, South Korea', lat: 37.4979, lng: 127.0276, cc: 'KR', state: 'Seoul', ytLive: '3ottn7kfRuc', live: true },
+  { name: 'Waikiki Beach', country: 'Honolulu, USA', lat: 21.2793, lng: -157.8294, cc: 'US', state: 'Hawaii', ytLive: 'qCSS4j2iShk', live: true },
+  { name: 'Copacabana Live', country: 'Rio de Janeiro, Brazil', lat: -22.9711, lng: -43.1822, cc: 'BR', state: 'Rio de Janeiro', ytLive: '6QoLEltTzIM', live: true },
+  { name: 'Fort Lauderdale Marina', country: 'Florida, USA', lat: 26.1068, lng: -80.1098, cc: 'US', state: 'Florida', ytLive: '_sOQkz1xgKc', live: true },
+  { name: 'Western Wall', country: 'Jerusalem, Israel', lat: 31.7767, lng: 35.2345, cc: 'IL', state: 'Jerusalem', ytLive: '77akujLn4k8', live: true },
+  { name: 'Mpala Watering Hole', country: 'Laikipia, Kenya', lat: 0.2931, lng: 36.8969, cc: 'KE', state: 'Laikipia', ytLive: 'KyQAB-TKOVA', live: true },
+  { name: 'Brooks Falls', country: 'Katmai, Alaska', lat: 58.5619, lng: -155.7781, cc: 'US', state: 'Alaska', ytLive: '73-EekdVVU8', live: true },
+  { name: 'Halemaʻumaʻu Crater', country: 'Kīlauea, Hawaii', lat: 19.4069, lng: -155.2834, cc: 'US', state: 'Hawaii', ytLive: 'gXKuUyKt8mc', live: true },
+  { name: 'Old Faithful', country: 'Yellowstone, USA', lat: 44.4605, lng: -110.8281, cc: 'US', state: 'Wyoming', ytLive: 'BWnloy8r0qU', live: true },
+  { name: 'Monterey Bay Kelp', country: 'Monterey, USA', lat: 36.6186, lng: -121.9019, cc: 'US', state: 'California', ytLive: 'tEtg5Kg3voQ', live: true },
+  { name: 'Sydney Harbour', country: 'Sydney, Australia', lat: -33.8568, lng: 151.2153, cc: 'AU', state: 'New South Wales', ytLive: '7pcL-0Wo77U', live: true },
+  { name: 'Table Mountain Live', country: 'Cape Town, South Africa', lat: -33.9628, lng: 18.4098, cc: 'ZA', state: 'Western Cape', ytLive: 'i5R4ZlVLzLI', live: true },
+  { name: 'Kabukicho', country: 'Tokyo, Japan', lat: 35.6947, lng: 139.7028, cc: 'JP', state: 'Tokyo', ytLive: 'DjdUEyjx8GM', live: true },
+  { name: 'Marina Bay Live', country: 'Singapore', lat: 1.2830, lng: 103.8607, cc: 'SG', ytLive: '-7H7soFn2mM', live: true },
+  { name: 'Taipei 101', country: 'Taipei, Taiwan', lat: 25.0276, lng: 121.5726, cc: 'TW', state: 'Taipei', ytLive: 'z_fY1pj1VBw', live: true },
+  { name: 'Khaosan Road', country: 'Bangkok, Thailand', lat: 13.7586, lng: 100.4976, cc: 'TH', state: 'Bangkok', ytLive: 'hv942OE8FHc', live: true },
+  { name: 'Dam Square', country: 'Amsterdam, Netherlands', lat: 52.3731, lng: 4.8926, cc: 'NL', state: 'North Holland', ytLive: 'Gd9d4q6WvUY', live: true },
+  { name: 'Zócalo Square', country: 'Mexico City, Mexico', lat: 19.4326, lng: -99.1332, cc: 'MX', state: 'Mexico City', ytLive: 'uV3wWHSvkfs', live: true },
+  { name: 'Prague Old Town', country: 'Prague, Czechia', lat: 50.0875, lng: 14.4213, cc: 'CZ', state: 'Prague', ytLive: '0FvTdT3EJY4', live: true },
+  { name: "St Peter's Square", country: 'Vatican City', lat: 41.9022, lng: 12.4539, cc: 'VA', ytLive: 'YNXui7lLcSw', live: true },
+  { name: 'Navy Pier', country: 'Chicago, USA', lat: 41.8919, lng: -87.6051, cc: 'US', state: 'Illinois', ytLive: 'oJdXk0jOfV4', live: true },
+  { name: 'Duval Street', country: 'Key West, USA', lat: 24.5551, lng: -81.8044, cc: 'US', state: 'Florida', ytLive: 'wc9vgfHhWS8', live: true },
+  { name: 'Bosphorus Strait', country: 'Istanbul, Turkey', lat: 41.0766, lng: 29.0415, cc: 'TR', state: 'Istanbul', ytLive: 'XfLhZ80hHQg', live: true },
 
   // --- STREET VIEW LOCATIONS (capped at SV_SESSION_CAP per session) ---
   { name: 'Rialto Bridge', country: 'Venice, Italy', lat: 45.4380, lng: 12.3358, heading: 270, cc: 'IT', state: 'Veneto' },
@@ -802,6 +872,97 @@ window.addEventListener('message', (e) => {
   if (data.event === 'infoDelivery' && data.info && data.info.playerState === 1) clearStreamWatchdog();
 });
 
+// -----------------------------------------------------------------------------
+// Pre-flight stream health probe (Tier 1 defense). YouTube oEmbed is CORS-clean
+// and returns 401/403 for private/blocked, 404 for deleted videos, and 200 for
+// alive. Cache the result for the session so we never probe the same id twice.
+// Combined with the 8s PLAYING watchdog (Tier 2), this means dead streams almost
+// never reach the user's screen.
+// -----------------------------------------------------------------------------
+const STREAM_CACHE_KEY = 'everyplace:stream_health';
+const STREAM_CACHE_TTL = 30 * 60 * 1000; // 30 min, long enough for a session
+function getStreamCache() {
+  try { return JSON.parse(sessionStorage.getItem(STREAM_CACHE_KEY) || '{}'); } catch(e) { return {}; }
+}
+function setStreamCacheEntry(id, status) {
+  const c = getStreamCache();
+  c[id] = { status: status, ts: Date.now() };
+  try { sessionStorage.setItem(STREAM_CACHE_KEY, JSON.stringify(c)); } catch(e) {}
+}
+async function checkYouTubeStream(videoId) {
+  if (!videoId) return 'ok';
+  const cache = getStreamCache();
+  const entry = cache[videoId];
+  if (entry && (Date.now() - entry.ts) < STREAM_CACHE_TTL) return entry.status;
+  try {
+    const ctrl = new AbortController();
+    const timeout = setTimeout(() => ctrl.abort(), 2500); // never block UX > 2.5s
+    const url = `https://www.youtube.com/oembed?url=https%3A//www.youtube.com/watch%3Fv%3D${encodeURIComponent(videoId)}&format=json`;
+    const res = await fetch(url, { method: 'GET', mode: 'cors', signal: ctrl.signal });
+    clearTimeout(timeout);
+    let status;
+    if (res.ok) status = 'ok';
+    else if (res.status === 401 || res.status === 403) status = 'private';
+    else if (res.status === 404) status = 'dead';
+    else status = 'unknown';
+    setStreamCacheEntry(videoId, status);
+    return status;
+  } catch(e) {
+    // CORS-blocked, network error, or aborted: don't penalize the location.
+    // The 8s PLAYING watchdog is the safety net.
+    return 'unknown';
+  }
+}
+// Fire and forget. Runs in parallel with the iframe load. If the probe comes back
+// with a definitive failure AND the user hasn't already advanced, jump forward.
+async function maybeAdvanceIfDead(loc, reqId) {
+  if (!loc.ytLive) return; // no probe for ytChannel or Street View
+  const status = await checkYouTubeStream(loc.ytLive);
+  if (status === 'dead' || status === 'private') {
+    if (reqId !== locationRequestId) return; // user already moved on
+    console.warn('[everyplace] preflight rejected:', loc.name, status);
+    next();
+  }
+}
+
+// -----------------------------------------------------------------------------
+// Favorites system. Per-browser localStorage. F toggles current place. V toggles
+// "favorites only" rotation mode so next/prev/random cycles a curated subset.
+// -----------------------------------------------------------------------------
+const FAV_KEY = 'everyplace:favorites';
+function getFavorites() {
+  try { return JSON.parse(localStorage.getItem(FAV_KEY) || '[]'); } catch(e) { return []; }
+}
+function setFavorites(list) {
+  try { localStorage.setItem(FAV_KEY, JSON.stringify(list)); } catch(e) {}
+}
+function isFavorite(slug) { return getFavorites().indexOf(slug) !== -1; }
+function toggleFavorite(slug) {
+  const favs = getFavorites();
+  const idx = favs.indexOf(slug);
+  if (idx === -1) { favs.push(slug); setFavorites(favs); return true; }
+  favs.splice(idx, 1); setFavorites(favs); return false;
+}
+let favoritesFilterOn = false;
+function favoriteIndices() {
+  const favs = getFavorites();
+  return LOCATIONS.reduce((acc, l, i) => { if (favs.indexOf(l.slug) !== -1) acc.push(i); return acc; }, []);
+}
+function syncFavButton() {
+  const slug = LOCATIONS[currentIndex] && LOCATIONS[currentIndex].slug;
+  const favBtn = $('favBtn');
+  if (!favBtn) return;
+  if (slug && isFavorite(slug)) {
+    favBtn.classList.add('fav-on');
+    favBtn.innerHTML = '♥';
+  } else {
+    favBtn.classList.remove('fav-on');
+    favBtn.innerHTML = '♡';
+  }
+  if (favoritesFilterOn) favBtn.classList.add('fav-filter');
+  else favBtn.classList.remove('fav-filter');
+}
+
 function renderLocation(i, opts) {
   opts = opts || {};
   const reqId = ++locationRequestId;
@@ -816,6 +977,9 @@ function renderLocation(i, opts) {
   // 8s, we auto-advance so users never see a dead window. Cleared when the
   // global postMessage listener sees a PLAYING state.
   armStreamWatchdog(loc, reqId);
+  // Pre-flight probe in parallel: oEmbed says dead/private -> advance immediately.
+  // Cached after first probe; warm cache makes this effectively free.
+  maybeAdvanceIfDead(loc, reqId);
 
   // Audio handoff: stop anything currently playing so the previous location's
   // sound doesn't bleed into the new one. Radio will auto-resume inside fetchRadio
@@ -881,6 +1045,9 @@ function renderLocation(i, opts) {
 
   // If user had place-sounds on, carry that mode across to the new location.
   if (audioMode === 1) startPlaceSounds();
+
+  // Reflect favorite state on the heart button for the newly rendered place.
+  syncFavButton();
 }
 
 // Match the current URL slug to a LOCATIONS index. Returns -1 if not found.
@@ -923,13 +1090,128 @@ window.addEventListener('popstate', () => {
   }
 });
 
-function next() { currentIndex = (currentIndex + 1) % LOCATIONS.length; renderLocation(currentIndex); restartAmbient(); }
-function prev() { currentIndex = (currentIndex - 1 + LOCATIONS.length) % LOCATIONS.length; renderLocation(currentIndex); restartAmbient(); }
+// Helper: build the rotation pool. Default = all locations. Favorites mode = saved subset.
+// If favorites mode is on but the saved list is empty (or has only 1 entry), fall back
+// to the full catalog so the buttons never feel broken.
+function rotationPool() {
+  if (!favoritesFilterOn) return null; // null = full set
+  const idxs = favoriteIndices();
+  return idxs.length >= 2 ? idxs : null;
+}
+function next() {
+  const pool = rotationPool();
+  if (pool) {
+    const here = pool.indexOf(currentIndex);
+    const nextPos = here === -1 ? 0 : (here + 1) % pool.length;
+    currentIndex = pool[nextPos];
+  } else {
+    currentIndex = (currentIndex + 1) % LOCATIONS.length;
+  }
+  renderLocation(currentIndex); restartAmbient();
+}
+function prev() {
+  const pool = rotationPool();
+  if (pool) {
+    const here = pool.indexOf(currentIndex);
+    const prevPos = here === -1 ? pool.length - 1 : (here - 1 + pool.length) % pool.length;
+    currentIndex = pool[prevPos];
+  } else {
+    currentIndex = (currentIndex - 1 + LOCATIONS.length) % LOCATIONS.length;
+  }
+  renderLocation(currentIndex); restartAmbient();
+}
 function random() {
+  const pool = rotationPool();
+  const set = pool || LOCATIONS.map((_, i) => i);
   let i;
-  do { i = Math.floor(Math.random() * LOCATIONS.length); } while (i === currentIndex && LOCATIONS.length > 1);
+  do { i = set[Math.floor(Math.random() * set.length)]; } while (i === currentIndex && set.length > 1);
   currentIndex = i; renderLocation(currentIndex); restartAmbient();
 }
+
+// -----------------------------------------------------------------------------
+// Favorites UI handlers
+// -----------------------------------------------------------------------------
+function toggleCurrentFavorite() {
+  const loc = LOCATIONS[currentIndex];
+  if (!loc) return;
+  const nowFav = toggleFavorite(loc.slug);
+  syncFavButton();
+  showToast(nowFav ? 'Saved to your places' : 'Removed from places');
+}
+function toggleFavoritesFilter() {
+  const favs = getFavorites();
+  if (favs.length < 2 && !favoritesFilterOn) {
+    showToast('Save 2+ places first (F)');
+    return;
+  }
+  favoritesFilterOn = !favoritesFilterOn;
+  syncFavButton();
+  showToast(favoritesFilterOn ? `My Places (${favs.length})` : 'All places');
+}
+
+// -----------------------------------------------------------------------------
+// TV / ambient screen mode. T toggles. Hides every chrome layer, hides cursor,
+// requests Screen Wake Lock so phones/laptops don't sleep mid-window. Mouse-move
+// briefly reveals controls (1.5s auto-hide). ESC also exits. URL gains ?tv=1.
+// -----------------------------------------------------------------------------
+let tvMode = false;
+let wakeLock = null;
+let tvRevealTimer = null;
+let tvHintTimer = null;
+async function requestWakeLock() {
+  try {
+    if ('wakeLock' in navigator) {
+      wakeLock = await navigator.wakeLock.request('screen');
+      wakeLock.addEventListener('release', () => { wakeLock = null; });
+    }
+  } catch(e) { /* not fatal: TV mode still works without wake lock */ }
+}
+function releaseWakeLock() {
+  if (wakeLock) { try { wakeLock.release(); } catch(e) {} wakeLock = null; }
+}
+document.addEventListener('visibilitychange', () => {
+  // Re-acquire wake lock if user tabs back in while TV mode is on (lock auto-releases).
+  if (tvMode && document.visibilityState === 'visible' && !wakeLock) requestWakeLock();
+});
+function tvUpdateUrlParam(on) {
+  try {
+    const url = new URL(window.location.href);
+    if (on) url.searchParams.set('tv', '1'); else url.searchParams.delete('tv');
+    history.replaceState(history.state, '', url.toString());
+  } catch(e) {}
+}
+function showTvExitHint() {
+  const hint = $('tvExitHint');
+  if (!hint) return;
+  hint.classList.add('show');
+  if (tvHintTimer) clearTimeout(tvHintTimer);
+  tvHintTimer = setTimeout(() => hint.classList.remove('show'), 2200);
+}
+function tvReveal() {
+  if (!tvMode) return;
+  document.body.classList.add('tv-reveal');
+  if (tvRevealTimer) clearTimeout(tvRevealTimer);
+  tvRevealTimer = setTimeout(() => document.body.classList.remove('tv-reveal'), 1500);
+}
+function enterTvMode() {
+  tvMode = true;
+  document.body.classList.add('tv-mode');
+  document.body.classList.remove('tv-reveal');
+  requestWakeLock();
+  tvUpdateUrlParam(true);
+  showTvExitHint();
+  const tvBtn = $('tvBtn'); if (tvBtn) tvBtn.classList.add('active');
+}
+function exitTvMode() {
+  tvMode = false;
+  document.body.classList.remove('tv-mode', 'tv-reveal');
+  releaseWakeLock();
+  tvUpdateUrlParam(false);
+  const tvBtn = $('tvBtn'); if (tvBtn) tvBtn.classList.remove('active');
+}
+function toggleTvMode() { tvMode ? exitTvMode() : enterTvMode(); }
+document.addEventListener('mousemove', () => { if (tvMode) tvReveal(); }, { passive: true });
+document.addEventListener('touchstart', () => { if (tvMode) tvReveal(); }, { passive: true });
 
 // Stop everything audio-related (used when switching modes or locations).
 function stopAllAudio() {
@@ -1242,6 +1524,8 @@ document.addEventListener('keydown', e => {
     if (e.key === 'Escape') closePostcard();
     return;
   }
+  // ESC out of TV mode regardless of other state.
+  if (e.key === 'Escape' && tvMode) { exitTvMode(); return; }
   if (e.key === 'ArrowRight') next();
   else if (e.key === 'ArrowLeft') prev();
   else if (e.key === ' ') { e.preventDefault(); random(); }
@@ -1249,7 +1533,27 @@ document.addEventListener('keydown', e => {
   else if (e.key.toLowerCase() === 'a') toggleAmbient();
   else if (e.key.toLowerCase() === 'p') openPostcard();
   else if (e.key.toLowerCase() === 's') copyShareLink();
+  else if (e.key.toLowerCase() === 'f') toggleCurrentFavorite();
+  else if (e.key.toLowerCase() === 'v') toggleFavoritesFilter();
+  else if (e.key.toLowerCase() === 't') toggleTvMode();
 });
+
+// Click handlers for the new favorite + TV buttons.
+const favBtn = $('favBtn');
+if (favBtn) {
+  favBtn.addEventListener('click', toggleCurrentFavorite);
+  favBtn.addEventListener('contextmenu', (e) => { e.preventDefault(); toggleFavoritesFilter(); });
+}
+const tvBtn = $('tvBtn');
+if (tvBtn) tvBtn.addEventListener('click', toggleTvMode);
+
+// Honor ?tv=1 URL param so users can bookmark a "TV bookmark" of the site.
+try {
+  if (new URL(window.location.href).searchParams.get('tv') === '1') {
+    // Defer until after launch() has shown the viewer.
+    setTimeout(() => { if (!tvMode) enterTvMode(); }, 600);
+  }
+} catch(e) {}
 
 // Touch swipes: horizontal-only. Track both axes so a vertical scroll attempt
 // (e.g. a user trying to pull-to-refresh or scroll something) doesn't trigger
