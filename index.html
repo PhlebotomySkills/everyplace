@@ -455,62 +455,62 @@
 // When neither is set, Street View is used (protected by SV_SESSION_CAP below).
 const LOCATIONS = [
   // --- LIVE 4K / HD CAMS (verified embeddable via oembed + embed page check) ---
-  { name: 'Times Square', country: 'New York, USA', lat: 40.7580, lng: -73.9855, cc: 'US', ytLive: 'VGnFLdQW39A', live: true },
-  { name: 'Shibuya Crossing', country: 'Tokyo, Japan', lat: 35.6595, lng: 139.7004, cc: 'JP', ytLive: '_9pavMzUY-c', live: true },
-  { name: 'Jackson Hole Town Square', country: 'Wyoming, USA', lat: 43.4799, lng: -110.7624, cc: 'US', ytLive: '1EiC9bvVGnk', live: true },
-  { name: 'Mount Fuji, Kawaguchi', country: 'Yamanashi, Japan', lat: 35.5100, lng: 138.7700, cc: 'JP', ytLive: 'Sv9hcJ3k5h4', live: true },
-  { name: 'Lake Kawaguchiko', country: 'Mount Fuji, Japan', lat: 35.5167, lng: 138.7500, cc: 'JP', ytLive: 'bdUbACCWmoY', live: true },
+  { name: 'Times Square', country: 'New York, USA', lat: 40.7580, lng: -73.9855, cc: 'US', state: 'New York', ytLive: 'VGnFLdQW39A', live: true },
+  { name: 'Shibuya Crossing', country: 'Tokyo, Japan', lat: 35.6595, lng: 139.7004, cc: 'JP', state: 'Tokyo', ytLive: '_9pavMzUY-c', live: true },
+  { name: 'Jackson Hole Town Square', country: 'Wyoming, USA', lat: 43.4799, lng: -110.7624, cc: 'US', state: 'Wyoming', ytLive: '1EiC9bvVGnk', live: true },
+  { name: 'Mount Fuji, Kawaguchi', country: 'Yamanashi, Japan', lat: 35.5100, lng: 138.7700, cc: 'JP', state: 'Yamanashi', ytLive: 'Sv9hcJ3k5h4', live: true },
+  { name: 'Lake Kawaguchiko', country: 'Mount Fuji, Japan', lat: 35.5167, lng: 138.7500, cc: 'JP', state: 'Yamanashi', ytLive: 'bdUbACCWmoY', live: true },
   { name: 'Aurora, Reykjavík', country: 'Iceland', lat: 64.1466, lng: -21.9426, cc: 'IS', ytLive: 'goLhhpt8r0Y', live: true },
 
   // --- STREET VIEW LOCATIONS (capped at SV_SESSION_CAP per session) ---
-  { name: 'Rialto Bridge', country: 'Venice, Italy', lat: 45.4380, lng: 12.3358, heading: 270, cc: 'IT' },
+  { name: 'Rialto Bridge', country: 'Venice, Italy', lat: 45.4380, lng: 12.3358, heading: 270, cc: 'IT', state: 'Veneto' },
   { name: 'Mong Kok', country: 'Hong Kong', lat: 22.3193, lng: 114.1694, heading: 0, cc: 'HK' },
-  { name: 'Jemaa el-Fnaa', country: 'Marrakech, Morocco', lat: 31.6258, lng: -7.9891, heading: 90, cc: 'MA' },
+  { name: 'Jemaa el-Fnaa', country: 'Marrakech, Morocco', lat: 31.6258, lng: -7.9891, heading: 90, cc: 'MA', state: 'Marrakesh-Safi' },
   { name: 'Petra', country: 'Jordan', lat: 30.3285, lng: 35.4444, heading: 180, cc: 'JO' },
-  { name: 'Chefchaouen', country: 'Morocco', lat: 35.1689, lng: -5.2636, heading: 0, cc: 'MA' },
-  { name: 'Hallstatt', country: 'Austria', lat: 47.5622, lng: 13.6493, heading: 180, cc: 'AT' },
-  { name: 'Oia', country: 'Santorini, Greece', lat: 36.4618, lng: 25.3753, heading: 270, cc: 'GR' },
-  { name: 'Vernazza', country: 'Cinque Terre, Italy', lat: 44.1350, lng: 9.6840, heading: 45, cc: 'IT' },
-  { name: 'Machu Picchu', country: 'Peru', lat: -13.1631, lng: -72.5450, heading: 90, cc: 'PE' },
-  { name: 'Uluru', country: 'Australia', lat: -25.3444, lng: 131.0369, heading: 0, cc: 'AU' },
-  { name: 'Cappadocia', country: 'Turkey', lat: 38.6431, lng: 34.8289, heading: 180, cc: 'TR' },
-  { name: 'Angkor Wat', country: 'Cambodia', lat: 13.4125, lng: 103.8670, heading: 90, cc: 'KH' },
-  { name: 'Great Wall, Mutianyu', country: 'China', lat: 40.4319, lng: 116.5704, heading: 45, cc: 'CN' },
-  { name: 'Salar de Uyuni', country: 'Bolivia', lat: -20.1338, lng: -67.4891, heading: 90, cc: 'BO' },
+  { name: 'Chefchaouen', country: 'Morocco', lat: 35.1689, lng: -5.2636, heading: 0, cc: 'MA', state: 'Tanger-Tetouan-Al Hoceima' },
+  { name: 'Hallstatt', country: 'Austria', lat: 47.5622, lng: 13.6493, heading: 180, cc: 'AT', state: 'Upper Austria' },
+  { name: 'Oia', country: 'Santorini, Greece', lat: 36.4618, lng: 25.3753, heading: 270, cc: 'GR', state: 'South Aegean' },
+  { name: 'Vernazza', country: 'Cinque Terre, Italy', lat: 44.1350, lng: 9.6840, heading: 45, cc: 'IT', state: 'Liguria' },
+  { name: 'Machu Picchu', country: 'Peru', lat: -13.1631, lng: -72.5450, heading: 90, cc: 'PE', state: 'Cusco' },
+  { name: 'Uluru', country: 'Australia', lat: -25.3444, lng: 131.0369, heading: 0, cc: 'AU', state: 'Northern Territory' },
+  { name: 'Cappadocia', country: 'Turkey', lat: 38.6431, lng: 34.8289, heading: 180, cc: 'TR', state: 'Nevşehir' },
+  { name: 'Angkor Wat', country: 'Cambodia', lat: 13.4125, lng: 103.8670, heading: 90, cc: 'KH', state: 'Siem Reap' },
+  { name: 'Great Wall, Mutianyu', country: 'China', lat: 40.4319, lng: 116.5704, heading: 45, cc: 'CN', state: 'Beijing' },
+  { name: 'Salar de Uyuni', country: 'Bolivia', lat: -20.1338, lng: -67.4891, heading: 90, cc: 'BO', state: 'Potosí' },
   { name: 'Vestrahorn', country: 'Iceland', lat: 64.2540, lng: -14.9945, heading: 180, cc: 'IS' },
-  { name: 'Plitvice Lakes', country: 'Croatia', lat: 44.8654, lng: 15.5820, heading: 270, cc: 'HR' },
-  { name: 'Reine, Lofoten', country: 'Norway', lat: 67.9326, lng: 13.0901, heading: 90, cc: 'NO' },
-  { name: 'Arashiyama Bamboo Grove', country: 'Kyoto, Japan', lat: 35.0170, lng: 135.6710, heading: 0, cc: 'JP' },
-  { name: 'Varanasi Ghats', country: 'India', lat: 25.3079, lng: 83.0118, heading: 180, cc: 'IN' },
-  { name: 'Golden Gai', country: 'Tokyo, Japan', lat: 35.6938, lng: 139.7036, heading: 90, cc: 'JP' },
-  { name: 'Meteora', country: 'Greece', lat: 39.7217, lng: 21.6306, heading: 180, cc: 'GR' },
-  { name: 'San Pedro de Atacama', country: 'Chile', lat: -22.9098, lng: -68.1997, heading: 0, cc: 'CL' },
-  { name: 'Burj Khalifa', country: 'Dubai, UAE', lat: 25.1972, lng: 55.2744, heading: 90, cc: 'AE' },
-  { name: 'Moraine Lake', country: 'Banff, Canada', lat: 51.3217, lng: -116.1860, heading: 180, cc: 'CA' },
-  { name: 'Quiraing', country: 'Isle of Skye, Scotland', lat: 57.6436, lng: -6.2669, heading: 90, cc: 'GB' },
-  { name: 'Longyearbyen', country: 'Svalbard, Norway', lat: 78.2232, lng: 15.6267, heading: 0, cc: 'NO' },
+  { name: 'Plitvice Lakes', country: 'Croatia', lat: 44.8654, lng: 15.5820, heading: 270, cc: 'HR', state: 'Lika-Senj' },
+  { name: 'Reine, Lofoten', country: 'Norway', lat: 67.9326, lng: 13.0901, heading: 90, cc: 'NO', state: 'Nordland' },
+  { name: 'Arashiyama Bamboo Grove', country: 'Kyoto, Japan', lat: 35.0170, lng: 135.6710, heading: 0, cc: 'JP', state: 'Kyoto' },
+  { name: 'Varanasi Ghats', country: 'India', lat: 25.3079, lng: 83.0118, heading: 180, cc: 'IN', state: 'Uttar Pradesh' },
+  { name: 'Golden Gai', country: 'Tokyo, Japan', lat: 35.6938, lng: 139.7036, heading: 90, cc: 'JP', state: 'Tokyo' },
+  { name: 'Meteora', country: 'Greece', lat: 39.7217, lng: 21.6306, heading: 180, cc: 'GR', state: 'Thessaly' },
+  { name: 'San Pedro de Atacama', country: 'Chile', lat: -22.9098, lng: -68.1997, heading: 0, cc: 'CL', state: 'Antofagasta' },
+  { name: 'Burj Khalifa', country: 'Dubai, UAE', lat: 25.1972, lng: 55.2744, heading: 90, cc: 'AE', state: 'Dubai' },
+  { name: 'Moraine Lake', country: 'Banff, Canada', lat: 51.3217, lng: -116.1860, heading: 180, cc: 'CA', state: 'Alberta' },
+  { name: 'Quiraing', country: 'Isle of Skye, Scotland', lat: 57.6436, lng: -6.2669, heading: 90, cc: 'GB', state: 'Scotland' },
+  { name: 'Longyearbyen', country: 'Svalbard, Norway', lat: 78.2232, lng: 15.6267, heading: 0, cc: 'NO', state: 'Svalbard' },
   { name: 'Gasadalur', country: 'Faroe Islands', lat: 62.1015, lng: -7.4397, heading: 270, cc: 'FO' },
-  { name: 'Old Havana', country: 'Cuba', lat: 23.1360, lng: -82.3583, heading: 90, cc: 'CU' },
-  { name: 'Copacabana Beach', country: 'Rio de Janeiro, Brazil', lat: -22.9711, lng: -43.1822, heading: 180, cc: 'BR' },
-  { name: 'Rano Raraku Moai', country: 'Easter Island', lat: -27.1240, lng: -109.2886, heading: 90, cc: 'CL' },
-  { name: 'Chureito Pagoda', country: 'Mount Fuji, Japan', lat: 35.5100, lng: 138.8017, heading: 225, cc: 'JP' },
-  { name: 'Glencoe', country: 'Scottish Highlands', lat: 56.6810, lng: -5.0068, heading: 270, cc: 'GB' },
+  { name: 'Old Havana', country: 'Cuba', lat: 23.1360, lng: -82.3583, heading: 90, cc: 'CU', state: 'La Habana' },
+  { name: 'Copacabana Beach', country: 'Rio de Janeiro, Brazil', lat: -22.9711, lng: -43.1822, heading: 180, cc: 'BR', state: 'Rio de Janeiro' },
+  { name: 'Rano Raraku Moai', country: 'Easter Island', lat: -27.1240, lng: -109.2886, heading: 90, cc: 'CL', state: 'Valparaíso' },
+  { name: 'Chureito Pagoda', country: 'Mount Fuji, Japan', lat: 35.5100, lng: 138.8017, heading: 225, cc: 'JP', state: 'Yamanashi' },
+  { name: 'Glencoe', country: 'Scottish Highlands', lat: 56.6810, lng: -5.0068, heading: 270, cc: 'GB', state: 'Scotland' },
   { name: 'Sossusvlei Dunes', country: 'Namibia', lat: -24.7292, lng: 15.3527, heading: 0, cc: 'NA' },
-  { name: 'Salento Coffee Region', country: 'Colombia', lat: 4.6376, lng: -75.5707, heading: 45, cc: 'CO' },
-  { name: 'Cartagena Walled City', country: 'Colombia', lat: 10.4236, lng: -75.5518, heading: 90, cc: 'CO' },
-  { name: 'Bow Bridge, Central Park', country: 'New York, USA', lat: 40.7756, lng: -73.9713, heading: 180, cc: 'US' },
-  { name: 'Tower Bridge', country: 'London, UK', lat: 51.5055, lng: -0.0754, heading: 270, cc: 'GB' },
-  { name: 'Trocadéro', country: 'Paris, France', lat: 48.8606, lng: 2.2889, heading: 135, cc: 'FR' },
-  { name: 'Sydney Opera House', country: 'Australia', lat: -33.8568, lng: 151.2153, heading: 0, cc: 'AU' },
-  { name: 'Table Mountain', country: 'Cape Town, South Africa', lat: -33.9628, lng: 18.4098, heading: 90, cc: 'ZA' },
+  { name: 'Salento Coffee Region', country: 'Colombia', lat: 4.6376, lng: -75.5707, heading: 45, cc: 'CO', state: 'Quindío' },
+  { name: 'Cartagena Walled City', country: 'Colombia', lat: 10.4236, lng: -75.5518, heading: 90, cc: 'CO', state: 'Bolívar' },
+  { name: 'Bow Bridge, Central Park', country: 'New York, USA', lat: 40.7756, lng: -73.9713, heading: 180, cc: 'US', state: 'New York' },
+  { name: 'Tower Bridge', country: 'London, UK', lat: 51.5055, lng: -0.0754, heading: 270, cc: 'GB', state: 'England' },
+  { name: 'Trocadéro', country: 'Paris, France', lat: 48.8606, lng: 2.2889, heading: 135, cc: 'FR', state: 'Île-de-France' },
+  { name: 'Sydney Opera House', country: 'Australia', lat: -33.8568, lng: 151.2153, heading: 0, cc: 'AU', state: 'New South Wales' },
+  { name: 'Table Mountain', country: 'Cape Town, South Africa', lat: -33.9628, lng: 18.4098, heading: 90, cc: 'ZA', state: 'Western Cape' },
   { name: 'Gardens by the Bay', country: 'Singapore', lat: 1.2816, lng: 103.8636, heading: 180, cc: 'SG' },
-  { name: 'Pyramids of Giza', country: 'Egypt', lat: 29.9792, lng: 31.1342, heading: 90, cc: 'EG' },
-  { name: 'Chiang Mai Old City', country: 'Thailand', lat: 18.7877, lng: 98.9931, heading: 0, cc: 'TH' },
-  { name: 'Trolltunga', country: 'Norway', lat: 60.1242, lng: 6.7400, heading: 180, cc: 'NO' },
+  { name: 'Pyramids of Giza', country: 'Egypt', lat: 29.9792, lng: 31.1342, heading: 90, cc: 'EG', state: 'Giza' },
+  { name: 'Chiang Mai Old City', country: 'Thailand', lat: 18.7877, lng: 98.9931, heading: 0, cc: 'TH', state: 'Chiang Mai' },
+  { name: 'Trolltunga', country: 'Norway', lat: 60.1242, lng: 6.7400, heading: 180, cc: 'NO', state: 'Vestland' },
   { name: 'Dead Sea Shore', country: 'Israel', lat: 31.5590, lng: 35.4732, heading: 90, cc: 'IL' },
-  { name: 'Pripyat', country: 'Chernobyl, Ukraine', lat: 51.4055, lng: 30.0578, heading: 0, cc: 'UA' },
-  { name: 'Lake Baikal', country: 'Siberia, Russia', lat: 51.8500, lng: 104.8700, heading: 180, cc: 'RU' },
-  { name: 'Dubrovnik Old Town', country: 'Croatia', lat: 42.6407, lng: 18.1077, heading: 90, cc: 'HR' }
+  { name: 'Pripyat', country: 'Chernobyl, Ukraine', lat: 51.4055, lng: 30.0578, heading: 0, cc: 'UA', state: 'Kyiv Oblast' },
+  { name: 'Lake Baikal', country: 'Siberia, Russia', lat: 51.8500, lng: 104.8700, heading: 180, cc: 'RU', state: 'Irkutsk Oblast' },
+  { name: 'Dubrovnik Old Town', country: 'Croatia', lat: 42.6407, lng: 18.1077, heading: 90, cc: 'HR', state: 'Dubrovnik-Neretva' }
 ];
 
 // Slug generation: "Times Square" -> "times-square", "Oia" -> "oia".
@@ -550,9 +550,17 @@ const $ = id => document.getElementById(id);
 const setupPanel = $('setupPanel'), apiKeyInput = $('apiKeyInput'), launchBtn = $('launchBtn');
 const viewer = $('viewer'), viewerWrap = $('viewerWrap'), scrim = $('scrim'), brand = $('brand'), topRight = $('topRight');
 // Fade the iframe in once YouTube/Maps have rendered. Hides the cold-start black flash.
+// Also subscribe the YouTube player to state-change events so the stream watchdog
+// can detect PLAYING vs silent-failure within the 8s auto-skip window.
 viewer.addEventListener('load', () => {
   viewer.classList.add('is-loaded');
   viewerWrap.classList.add('is-loaded');
+  try {
+    const cw = viewer.contentWindow;
+    if (!cw) return;
+    cw.postMessage(JSON.stringify({ event: 'listening', id: 'everyplace', channel: 'widget' }), '*');
+    cw.postMessage(JSON.stringify({ event: 'command', func: 'addEventListener', args: ['onStateChange'], id: 'everyplace', channel: 'widget' }), '*');
+  } catch (e) {}
 });
 const counter = $('counter'), locationLabel = $('locationLabel');
 const locationName = $('locationName'), locationCountry = $('locationCountry'), ambientFact = $('ambientFact');
@@ -692,11 +700,51 @@ async function fetchAmbientFact(lat, lng, reqId) {
   } catch (e) { ambientFact.classList.remove('visible'); }
 }
 
-async function fetchRadio(cc, reqId) {
-  if (!cc) return;
+// Tiered radio match for a location:
+//   1. If loc.radio is set, search by station name within country (lock in a known local).
+//   2. Else if loc.state is set, search by state+country (regional lock-in).
+//   3. Else search by country only (the original behavior).
+// Each tier falls back to the next on empty results so a typo or radio-browser
+// gap never silences the row entirely. Tier 1 is exact name match → most accurate.
+async function fetchRadio(loc, reqId) {
+  if (!loc || !loc.cc) return;
+  const cc = loc.cc;
+  const RB = 'https://de1.api.radio-browser.info/json/stations/search?';
+  const baseParams = {
+    limit: '12',
+    hidebroken: 'true',
+    order: 'clickcount',
+    reverse: 'true',
+    is_https: 'true'
+  };
+  const buildUrl = extra => RB + new URLSearchParams({ countrycode: cc, ...baseParams, ...extra }).toString();
+
+  async function tryFetch(url) {
+    try {
+      const r = await fetch(url);
+      if (!r.ok) return [];
+      return await r.json();
+    } catch (e) { return []; }
+  }
+
   try {
-    const r = await fetch(`https://de1.api.radio-browser.info/json/stations/search?countrycode=${cc}&limit=8&hidebroken=true&order=clickcount&reverse=true&is_https=true`);
-    const stations = await r.json();
+    let stations = [];
+
+    // Tier 1: exact named station within the country.
+    if (loc.radio) {
+      stations = await tryFetch(buildUrl({ name: loc.radio, nameExact: 'false' }));
+    }
+
+    // Tier 2: state-level match within the country.
+    if (!stations.length && loc.state) {
+      stations = await tryFetch(buildUrl({ state: loc.state }));
+    }
+
+    // Tier 3: country-only.
+    if (!stations.length) {
+      stations = await tryFetch(buildUrl({}));
+    }
+
     if (reqId !== locationRequestId) return;
     if (!stations.length) { radioRow.style.display = 'none'; return; }
     const station = stations[Math.floor(Math.random() * Math.min(4, stations.length))];
@@ -720,6 +768,40 @@ function ytCmd(func, args) {
   } catch (e) {}
 }
 
+// Stream watchdog: if a live YouTube feed does not report PLAYING within 8 seconds,
+// it is dead/blocked/offline. Auto-skip to the next location so the user never sees
+// a black window or a "video unavailable" card.
+let streamWatchdog = null;
+let streamWatchdogReqId = null;
+function clearStreamWatchdog() {
+  if (streamWatchdog) { clearTimeout(streamWatchdog); streamWatchdog = null; }
+  streamWatchdogReqId = null;
+}
+function armStreamWatchdog(loc, reqId) {
+  clearStreamWatchdog();
+  if (!loc.ytLive && !loc.ytChannel) return; // Street View has no PLAYING event
+  streamWatchdogReqId = reqId;
+  streamWatchdog = setTimeout(() => {
+    // If the user already advanced, don't double-skip.
+    if (streamWatchdogReqId !== locationRequestId) return;
+    streamWatchdog = null;
+    console.warn('[everyplace] stream did not start within 8s, auto-skipping:', loc.name);
+    next();
+  }, 8000);
+}
+
+// Listen for YouTube player state messages. playerState 1 = playing.
+// Any PLAYING event means the feed is alive, so we clear the watchdog.
+window.addEventListener('message', (e) => {
+  if (!e.origin || !/youtube(-nocookie)?\.com$/.test(new URL(e.origin).hostname)) return;
+  let data;
+  try { data = typeof e.data === 'string' ? JSON.parse(e.data) : e.data; } catch (err) { return; }
+  if (!data) return;
+  const st = (data.info && typeof data.info === 'object') ? data.info.playerState : data.info;
+  if (data.event === 'onStateChange' && st === 1) clearStreamWatchdog();
+  if (data.event === 'infoDelivery' && data.info && data.info.playerState === 1) clearStreamWatchdog();
+});
+
 function renderLocation(i, opts) {
   opts = opts || {};
   const reqId = ++locationRequestId;
@@ -729,6 +811,11 @@ function renderLocation(i, opts) {
   // The skeleton gradient sits behind it during the YouTube cold-start.
   viewer.classList.remove('is-loaded');
   viewerWrap.classList.remove('is-loaded');
+
+  // Arm the stream watchdog. If this YouTube feed never reports PLAYING within
+  // 8s, we auto-advance so users never see a dead window. Cleared when the
+  // global postMessage listener sees a PLAYING state.
+  armStreamWatchdog(loc, reqId);
 
   // Audio handoff: stop anything currently playing so the previous location's
   // sound doesn't bleed into the new one. Radio will auto-resume inside fetchRadio
@@ -790,7 +877,7 @@ function renderLocation(i, opts) {
   fetchWeather(loc.lat, loc.lng, reqId);
   fetchPlanes(loc.lat, loc.lng, reqId);
   fetchAmbientFact(loc.lat, loc.lng, reqId);
-  fetchRadio(loc.cc, reqId);
+  fetchRadio(loc, reqId);
 
   // If user had place-sounds on, carry that mode across to the new location.
   if (audioMode === 1) startPlaceSounds();
