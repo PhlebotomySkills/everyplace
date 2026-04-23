@@ -407,6 +407,54 @@
     .btn { width: 36px; height: 36px; font-size: 12px; }
     .controls { gap: 4px; }
   }
+
+  /* ===== Social-of-place: reactions-only presence ===== */
+  .react-btn-wrap { position: relative; display: inline-block; }
+  .react-popover {
+    position: absolute; bottom: calc(100% + 12px);
+    left: 50%; transform: translateX(-50%);
+    display: none; gap: 4px; z-index: 12;
+    background: rgba(10,10,10,0.82);
+    backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px);
+    border: 1px solid rgba(255,255,255,0.14);
+    border-radius: 999px; padding: 6px 8px;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.4);
+    animation: reactPopIn 0.18s ease-out;
+  }
+  .react-popover.open { display: flex; }
+  .react-popover .emoji {
+    font-size: 22px; cursor: pointer;
+    width: 38px; height: 38px;
+    display: flex; align-items: center; justify-content: center;
+    border-radius: 50%; transition: transform 0.15s, background 0.15s;
+    user-select: none; -webkit-user-select: none;
+  }
+  .react-popover .emoji:hover { background: rgba(245,158,11,0.22); transform: scale(1.15); }
+  .react-popover .emoji:active { transform: scale(0.92); }
+  @keyframes reactPopIn {
+    from { opacity: 0; transform: translateX(-50%) translateY(6px); }
+    to   { opacity: 1; transform: translateX(-50%) translateY(0); }
+  }
+  .floating-reactions {
+    position: fixed; inset: 0;
+    pointer-events: none; z-index: 9;
+    overflow: hidden;
+  }
+  .floating-reactions .reaction {
+    position: absolute; bottom: 96px;
+    font-size: 34px; opacity: 0;
+    filter: drop-shadow(0 2px 10px rgba(0,0,0,0.6));
+    animation: reactionRise 3.2s cubic-bezier(.22,.61,.36,1) forwards;
+    will-change: transform, opacity;
+  }
+  @keyframes reactionRise {
+    0%   { transform: translateY(12px) scale(0.4); opacity: 0; }
+    12%  { transform: translateY(-4px) scale(1.15); opacity: 1; }
+    60%  { opacity: 1; }
+    100% { transform: translateY(-260px) scale(0.95); opacity: 0; }
+  }
+  body.tv-mode .react-popover { display: none !important; }
+  body.tv-mode .floating-reactions { display: block; }
 </style>
 </head>
 <body>
@@ -460,13 +508,22 @@
   <div class="location-country" id="locationCountry"></div>
   <div class="ambient-fact" id="ambientFact"></div>
 </div>
-<div class="hint" id="hint" style="display:none">← → travel · space random · F save · V my places · A auto · M audio · T tv mode · P postcard</div>
+<div class="hint" id="hint" style="display:none">← → travel · space random · F save · V my places · A auto · M audio · T tv mode · P postcard · 1 2 3 react</div>
+<div class="floating-reactions" id="floatingReactions"></div>
 <div class="controls" id="controls" style="display:none">
   <button class="btn" id="prevBtn" aria-label="Previous">←</button>
   <button class="btn" id="randomBtn" aria-label="Random">⚃</button>
   <button class="btn" id="nextBtn" aria-label="Next">→</button>
   <button class="btn" id="muteBtn" aria-label="Cycle audio: silent / place sounds / radio">♪</button>
   <button class="btn" id="favBtn" aria-label="Save place to favorites (F)">♡</button>
+  <div class="react-btn-wrap">
+    <button class="btn react-btn" id="reactBtn" aria-label="React to this place (1/2/3)">✦</button>
+    <div class="react-popover" id="reactPop">
+      <span class="emoji" data-emoji="🌅" title="sunrise (1)">🌅</span>
+      <span class="emoji" data-emoji="🌊" title="ocean (2)">🌊</span>
+      <span class="emoji" data-emoji="🌙" title="night (3)">🌙</span>
+    </div>
+  </div>
   <button class="btn" id="postcardBtn" aria-label="Save postcard">◨</button>
   <button class="btn" id="shareBtn" aria-label="Copy share link">⎘</button>
   <button class="btn" id="ambientBtn" aria-label="Ambient mode">◎</button>
@@ -1536,6 +1593,9 @@ document.addEventListener('keydown', e => {
   else if (e.key.toLowerCase() === 'f') toggleCurrentFavorite();
   else if (e.key.toLowerCase() === 'v') toggleFavoritesFilter();
   else if (e.key.toLowerCase() === 't') toggleTvMode();
+  else if (e.key === '1') sendReaction('🌅');
+  else if (e.key === '2') sendReaction('🌊');
+  else if (e.key === '3') sendReaction('🌙');
 });
 
 // Click handlers for the new favorite + TV buttons.
@@ -1577,6 +1637,94 @@ document.addEventListener('touchend', e => {
     dx < 0 ? next() : prev();
   }
 });
+
+// ===== Social-of-place: reactions-only presence =====
+// Zero-account, ephemeral, cooldown-throttled. Cross-tab sync via BroadcastChannel.
+// Future remote realtime: wire window.EP_broadcastReaction to a PartyKit/Ably bridge.
+const REACTION_COOLDOWN_MS = 1500;
+const REACTION_MAX_ON_SCREEN = 40; // hard cap to keep DOM sane on spammy events
+let lastReactionAt = 0;
+const reactionChannel = ('BroadcastChannel' in window) ? new BroadcastChannel('everyplace-reactions') : null;
+
+function currentSlug() {
+  try { return (LOCATIONS[currentIndex] && LOCATIONS[currentIndex].slug) || null; }
+  catch(e) { return null; }
+}
+
+function spawnReaction(emoji, opts) {
+  const layer = document.getElementById('floatingReactions');
+  if (!layer) return;
+  // Cap active reactions so a flood cannot blow up the DOM.
+  if (layer.children.length >= REACTION_MAX_ON_SCREEN) {
+    layer.removeChild(layer.firstChild);
+  }
+  const el = document.createElement('div');
+  el.className = 'reaction';
+  el.textContent = emoji;
+  // Remote reactions random across viewport; local reactions near center-bottom.
+  const isRemote = opts && opts.remote;
+  const vw = window.innerWidth;
+  const x = isRemote
+    ? (vw * (0.12 + Math.random() * 0.76))
+    : (vw * (0.42 + Math.random() * 0.16));
+  el.style.left = x + 'px';
+  layer.appendChild(el);
+  setTimeout(() => { if (el.parentNode) el.parentNode.removeChild(el); }, 3400);
+}
+
+function sendReaction(emoji) {
+  const now = Date.now();
+  if (now - lastReactionAt < REACTION_COOLDOWN_MS) return;
+  lastReactionAt = now;
+  spawnReaction(emoji);
+  const slug = currentSlug();
+  const msg = { emoji: emoji, slug: slug, t: now };
+  if (reactionChannel) { try { reactionChannel.postMessage(msg); } catch(e) {} }
+  if (typeof window.EP_broadcastReaction === 'function') {
+    try { window.EP_broadcastReaction(msg); } catch(e) {}
+  }
+}
+
+if (reactionChannel) {
+  reactionChannel.addEventListener('message', (e) => {
+    const msg = e && e.data;
+    if (!msg || !msg.emoji) return;
+    if (msg.slug && currentSlug() && msg.slug !== currentSlug()) return;
+    spawnReaction(msg.emoji, { remote: true });
+  });
+}
+
+// Hook for remote backend (PartyKit / Ably / etc) to inject into the feed.
+window.EP_receiveReaction = (msg) => {
+  if (!msg || !msg.emoji) return;
+  if (msg.slug && currentSlug() && msg.slug !== currentSlug()) return;
+  spawnReaction(msg.emoji, { remote: true });
+};
+
+// Popover interactions
+(() => {
+  const reactBtn = document.getElementById('reactBtn');
+  const reactPop = document.getElementById('reactPop');
+  if (!reactBtn || !reactPop) return;
+  reactBtn.addEventListener('click', (e) => {
+    e.stopPropagation();
+    reactPop.classList.toggle('open');
+  });
+  reactPop.addEventListener('click', (e) => {
+    const el = e.target.closest('[data-emoji]');
+    if (!el) return;
+    sendReaction(el.dataset.emoji);
+    reactPop.classList.remove('open');
+  });
+  document.addEventListener('click', (e) => {
+    if (reactBtn.contains(e.target) || reactPop.contains(e.target)) return;
+    reactPop.classList.remove('open');
+  });
+  // Close popover on Esc
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') reactPop.classList.remove('open');
+  });
+})();
 
 if (apiKey) launch();
 else apiKeyInput.focus();

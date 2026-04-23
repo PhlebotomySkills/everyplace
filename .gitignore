@@ -15,6 +15,11 @@ vercel-output.log
 backup.log
 backup_status.txt
 gh_probe.txt
+cleanup.log
+cleanup_status.txt
+harden.log
+harden_status.txt
+server.log
 
 # Python bytecode cache
 __pycache__/
